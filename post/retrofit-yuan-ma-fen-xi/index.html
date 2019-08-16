@@ -1,93 +1,102 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" >
+
 <title>Retrofit 源码分析 | philadelphia</title>
-<meta name="description" content="德不孤必有邻" />
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565950079495">
+<meta name="description" content="德不孤必有邻">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565950430820">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
 
 
 
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://philadelphia.github.io">
-  <img class="avatar" src="https://philadelphia.github.io/images/avatar.png?v=1565950079495" alt="">
-  </a>
-  <h1 class="site-title">
-    philadelphia
-  </h1>
-  <p class="site-description">
-    德不孤必有邻
-  </p>
-  <div class="menu-container">
-    
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://philadelphia.github.io">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1565950430820" class="site-logo">
+        <h1 class="site-title">philadelphia</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
       
-        <a href="/" class="menu" target="_blank">
-          首页
-        </a>
+        
+          <a href="/" class="site-nav" target="_blank">
+            首页
+          </a>
+        
       
-    
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
       
-        <a href="/archives" class="menu">
-          归档
-        </a>
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
       
-    
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
       
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
+    </div>
   </div>
-  <div class="social-container">
-    
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
       
-    
+        
       
-    
+        
       
-    
+        
       
-    
+        
       
-    
+        
+      
+    </div>
+    <div class="site-description">
+      德不孤必有邻
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
   </div>
 </div>
 
-        <div class="post-detail">
-          <article class="post">
-            <h2 class="post-title">
-              Retrofit 源码分析
-            </h2>
-            <div class="post-info">
-              <span>
-                2019-08-16
-              </span>
-              <span>
-                26 min read
-              </span>
-              
-            </div>
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Retrofit 源码分析</h2>
+            <div class="post-date">2019-08-16</div>
             
-            <div class="post-content-wrapper">
-              <div class="post-content">
-                <h1 id="简介">简介</h1>
+            <div class="post-content">
+              <h1 id="简介">简介</h1>
 <p>retrofit是square出品的一个优秀的网络框架，注意，不是一个网络引擎。它的定位和Volley是一样的。</p>
 <p>它完成了封装请求，线程切换，数据装换等一系列工作，如果自己有能力也可以封装一个这种框架，本质上是没有区别的。</p>
 <p>retrofit使用的网络引擎是OkHttp.</p>
@@ -1563,140 +1572,46 @@ Request toRequest(Object... args) throws IOException {
 }
 </code></pre>
 
-              </div>
-              <div class="toc-container">
-                <ul class="markdownIt-TOC">
-<li><a href="#%E7%AE%80%E4%BB%8B">简介</a></li>
-<li><a href="#retrofit">Retrofit</a></li>
-<li><a href="#platform">Platform</a></li>
-<li><a href="#servicemethod">ServiceMethod</a>
-<ul>
-<li><a href="#%E5%A4%84%E7%90%86%E8%BF%94%E5%9B%9E%E7%BB%93%E6%9E%9C">处理返回结果</a></li>
-<li><a href="#%E8%A7%A3%E6%9E%90%E6%96%B9%E6%B3%95%E6%B3%A8%E8%A7%A3">解析方法注解</a>
-<ul>
-<li><a href="#get">@GET</a></li>
-<li><a href="#post">@POST</a></li>
-<li><a href="#headers">@Headers</a></li>
-</ul>
-</li>
-<li><a href="#%E5%A4%84%E7%90%86%E6%96%B9%E6%B3%95%E5%8F%82%E6%95%B0">处理方法参数</a></li>
-<li><a href="#%E5%8F%82%E6%95%B0%E6%A0%A1%E9%AA%8C">参数校验</a></li>
-<li><a href="#%E8%A7%A3%E6%9E%90%E5%8F%82%E6%95%B0">解析参数</a></li>
-<li><a href="#%E8%8E%B7%E5%8F%96%E5%8F%82%E6%95%B0%E6%B3%A8%E8%A7%A3%E4%BF%A1%E6%81%AF">获取参数注解信息</a>
-<ul>
-<li><a href="#header">@Header</a>
-<ul>
-<li><a href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF">使用场景</a></li>
-</ul>
-</li>
-<li><a href="#path">@Path</a>
-<ul>
-<li><a href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF-2">使用场景</a></li>
-</ul>
-</li>
-<li><a href="#query">@Query</a>
-<ul>
-<li><a href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF-3">使用场景</a></li>
-</ul>
-</li>
-<li><a href="#querymap">@QueryMap</a>
-<ul>
-<li><a href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF-4">使用场景</a></li>
-</ul>
-</li>
-<li><a href="#field">@Field</a>
-<ul>
-<li><a href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF-5">使用场景</a></li>
-</ul>
-</li>
-<li><a href="#fieldmap">@FieldMap</a>
-<ul>
-<li><a href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF-6">使用场景</a></li>
-</ul>
-</li>
-<li><a href="#body">@Body</a>
-<ul>
-<li><a href="#%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF-7">使用场景</a></li>
-</ul>
-</li>
-<li><a href="#part">@Part</a></li>
-<li><a href="#rawpart">@RawPart</a></li>
-<li><a href="#partmap">@PartMap</a></li>
-<li><a href="#%E7%BB%93%E8%AE%BA">结论</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a href="#requestbuilder">RequestBuilder</a></li>
-<li><a href="#okhttpcall">OkHttpCall</a></li>
-</ul>
-
-              </div>
             </div>
-          </article>
-        </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://philadelphia.github.io/post/okhttp-yuan-ma-fen-xi">
+                  <h3 class="post-title">
+                    OkHttp 源码分析
+                  </h3>
+                </a>
+              </div>
+            
 
-        
-          <div class="next-post">
-            <div class="next">下一篇</div>
-            <a href="https://philadelphia.github.io/post/okhttp-yuan-ma-fen-xi">
-              <h3 class="post-title">
-                OkHttp 源码分析
-              </h3>
-            </a>
+            
+
           </div>
-        
 
-        
+        </div>
+      </div>
+    </div>
 
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
-  <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
-</div>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
 
-<script>
-  hljs.initHighlightingOnLoad()
+<script type="application/javascript">
 
-  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+AOS.init();
 
-  // This should probably be throttled.
-  // Especially because it triggers during smooth scrolling.
-  // https://lodash.com/docs/4.17.10#throttle
-  // You could do like...
-  // window.addEventListener("scroll", () => {
-  //    _.throttle(doThatStuff, 100);
-  // });
-  // Only not doing it here to keep this Pen dependency-free.
+hljs.initHighlightingOnLoad()
 
-  window.addEventListener("scroll", event => {
-    let fromTop = window.scrollY;
-
-    mainNavLinks.forEach((link, index) => {
-      let section = document.getElementById(decodeURI(link.hash).substring(1));
-      let nextSection = null
-      if (mainNavLinks[index + 1]) {
-        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
-      }
-      console.log('section.offsetHeight', section.offsetHeight);
-      if (section.offsetTop <= fromTop) {
-        if (nextSection) {
-          if (nextSection.offsetTop > fromTop) {
-            link.classList.add("current");
-          } else {
-            link.classList.remove("current");    
-          }
-        } else {
-          link.classList.add("current");
-        }
-      } else {
-        link.classList.remove("current");
-      }
-    });
-  });
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
 
 </script>
 
-      </div>
-    </div>
+
+
+
   </body>
 </html>
