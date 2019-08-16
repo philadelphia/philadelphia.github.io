@@ -1,0 +1,262 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Java:动态绑定 | philadelphia</title>
+<meta name="description" content="德不孤必有邻" />
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565949849808">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://philadelphia.github.io">
+  <img class="avatar" src="https://philadelphia.github.io/images/avatar.png?v=1565949849808" alt="">
+  </a>
+  <h1 class="site-title">
+    philadelphia
+  </h1>
+  <p class="site-description">
+    德不孤必有邻
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu" target="_blank">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Java:动态绑定
+            </h2>
+            <div class="post-info">
+              <span>
+                2019-08-16
+              </span>
+              <span>
+                2 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h2 id="动态绑定">动态绑定</h2>
+<p>动态绑定作为Java多态特性的一个重要实现</p>
+<p>有一下三个类：</p>
+<pre><code class="language-java">public class Fruit {
+    public static final String TAG = &quot;Fruit&quot;;
+
+    public Fruit() {
+    }
+
+    public void say() {
+        Log.i(TAG, &quot;say: i am fruit: &quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-java">public class Apple  extends  Fruit{
+
+    public void say(){
+        Log.i(TAG, &quot;say:  i am apple&quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-java">
+public class Orange extends Fruit {
+
+    public void say(){
+        Log.i(TAG, &quot;say:  i am orange&quot;);
+    }
+}
+</code></pre>
+<p>其中Apple和Orange类都继承Fruit类。</p>
+<p>然后在使用的时候</p>
+<pre><code class="language-java">Fruit fruit = new Apple();
+fruit.say();
+</code></pre>
+<p>我们都知道最后打印的结果是</p>
+<pre><code class="language-java">debug I/Fruit: say:  i am apple
+</code></pre>
+<p>很明显这就是Java多态特性的体现。</p>
+<p>我们明明调用的是Fruit对象的方法。但是运行时却调用了Apple对象的方法，这是怎么实现的呢，这就涉及到了Java的动态绑定了，</p>
+<p>这里确定两个概念：编译时类型与运行时类型</p>
+<p>编译时类型就是指改对象在编译后的文件里的类型也就是改对象声明时的类型，而运行时类型是指在程序运行时动态指定的类型也就是该对象定义时的类型。如果编译时类型与运行时类型不一致就会发生运行时动态绑定</p>
+<p>比如上面定义的Fruit fruit = new Apple();</p>
+<p>fruit的编译时类型是Fruit。</p>
+<p>我们可以从编译后的class文件看出</p>
+<pre><code class="language-java">#4 = Class              #243          // com/meiliwu/dragon/model/Apple
+#5 = Methodref          #4.#241       // com/meiliwu/dragon/model/Apple.&quot;&lt;init&gt;&quot;:()V
+#6 = Methodref          #244.#245     // com/meiliwu/dragon/model/Fruit.say:()V
+</code></pre>
+<p>我们可以从编译后的文件看出。fruit.say方法在编译后指向的是Fruit的say方法。但是运行时类型是Apple。运行时却是调用Apple的say方法。我们从日志可以看出来。</p>
+<p>如果我们将代码改成这样</p>
+<pre><code class="language-java">Apple fruit = new Apple();
+fruit.say();
+</code></pre>
+<p>打印日志如下：</p>
+<pre><code class="language-Java">12-25 11:25:17.803 9709-9709/com.meiliwu.dragon.debug I/Fruit: say:  i am apple
+</code></pre>
+<p>我们再看看编译后的文件</p>
+<pre><code class="language-java">4 = Class              #243          // com/meiliwu/dragon/model/Apple
+#5 = Methodref          #4.#241       // com/meiliwu/dragon/model/Apple.&quot;&lt;init&gt;&quot;:()V
+#6 = Methodref          #4.#244       // com/meiliwu/dragon/model/Apple.say:()V
+</code></pre>
+<p>从代码可以看出编译时类型与运行时类型一致，这是不会发生动态绑定的，这时可以从编译后的class文件得出验证。</p>
+<h2 id="java的pecs原则">JAVA的PECS原则</h2>
+<p>PECS指“Producer Extends，Consumer Super”</p>
+<p>比如：</p>
+<pre><code class="language-java">List&lt;? extends Fruit&gt; fruitList = new ArrayList&lt;&gt;();
+fruitList.add(new Apple());
+fruitList.add(new Orange());
+</code></pre>
+<p>但是编译器却报了编译错误：</p>
+<p>按理说fruitList是一个持有类型为Fruit及其子类的泛型列表啊，为什么不能往其中添加Fruit的子类呢？</p>
+<p>因为泛型的一大好处就是可以在编译时检查，避免传入不相符的类型可能导致的ClassCastException了。但是声明fruitList的时候没有明确的指定泛型的具体类型，所以编译器无法确认其持有的具体类型，当然也就拒绝了add操作。</p>
+<p>fruitList只是规定了泛型的上限，但是并没有确定具体的类型，也无法确定具体的子类型，可以是Apple，Orange还可能是Banana,所以不能把具体的对象添加进去，不然使用的时候可能导致ClassCastException了。但是可以保证从里面取出来的数据都是Fruit及其子类，而且还是Fruit的某一个子类。</p>
+<p>我们把代码改成下面这样子就可以添加不同的Fruit对象了。</p>
+<p>因为我们规定了fruitList持有的都是Fruit及其父类，可以将Fruit 及其子类都添加进去</p>
+<pre><code class="language-java">List&lt;? super Fruit&gt; fruitList = new ArrayList&lt;&gt;();
+fruitList.add(new Apple());
+fruitList.add(new Orange());
+</code></pre>
+<p>但是</p>
+<pre><code class="language-Java">fruitList.add(new Object());
+</code></pre>
+<p>却不行，why?因为在编译时无法确认具体的fruitList持有的是Fruit的哪一个父类，要想确定就不能用泛型了。所以就无法往里面写入Fruit的父类型对象。</p>
+<p>所以我们可以从Java Collctions copy方法的签名可以看出</p>
+<pre><code class="language-Java">public static &lt;T&gt; void copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src) {
+</code></pre>
+<p>dest集合持有？super T ，可以往里面写入所有T及其子类对象，而src集合持有？ extends T泛型。可以确保的是从里面读取的数据都是T及其子类。所以可以写入dest了。</p>
+<p>PS:Java 类的final方法和static不能复写</p>
+<h2 id="reference">Reference</h2>
+<p>1：https://www.cnblogs.com/ygj0930/p/6554103.html</p>
+<p>2:  http://www.importnew.com/8966.html</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E5%8A%A8%E6%80%81%E7%BB%91%E5%AE%9A">动态绑定</a></li>
+<li><a href="#java%E7%9A%84pecs%E5%8E%9F%E5%88%99">JAVA的PECS原则</a></li>
+<li><a href="#reference">Reference</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://philadelphia.github.io/post/android-zhong-activity-shu-ju-de-bao-cun-he-hui-fu">
+              <h3 class="post-title">
+                Android中Activity数据的保存和恢复 
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      console.log('section.offsetHeight', section.offsetHeight);
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

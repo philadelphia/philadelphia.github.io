@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-08-16T10:01:23.963Z</updated>
+    <updated>2019-08-16T10:04:13.581Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -10,6 +10,909 @@
     <logo>https://philadelphia.github.io/images/avatar.png</logo>
     <icon>https://philadelphia.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, philadelphia</rights>
+    <entry>
+        <title type="html"><![CDATA[Java:动态绑定]]></title>
+        <id>https://philadelphia.github.io/post/javadong-tai-bang-ding</id>
+        <link href="https://philadelphia.github.io/post/javadong-tai-bang-ding">
+        </link>
+        <updated>2019-08-16T10:03:39.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="动态绑定">动态绑定</h2>
+<p>动态绑定作为Java多态特性的一个重要实现</p>
+<p>有一下三个类：</p>
+<pre><code class="language-java">public class Fruit {
+    public static final String TAG = &quot;Fruit&quot;;
+
+    public Fruit() {
+    }
+
+    public void say() {
+        Log.i(TAG, &quot;say: i am fruit: &quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-java">public class Apple  extends  Fruit{
+
+    public void say(){
+        Log.i(TAG, &quot;say:  i am apple&quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-java">
+public class Orange extends Fruit {
+
+    public void say(){
+        Log.i(TAG, &quot;say:  i am orange&quot;);
+    }
+}
+</code></pre>
+<p>其中Apple和Orange类都继承Fruit类。</p>
+<p>然后在使用的时候</p>
+<pre><code class="language-java">Fruit fruit = new Apple();
+fruit.say();
+</code></pre>
+<p>我们都知道最后打印的结果是</p>
+<pre><code class="language-java">debug I/Fruit: say:  i am apple
+</code></pre>
+<p>很明显这就是Java多态特性的体现。</p>
+<p>我们明明调用的是Fruit对象的方法。但是运行时却调用了Apple对象的方法，这是怎么实现的呢，这就涉及到了Java的动态绑定了，</p>
+<p>这里确定两个概念：编译时类型与运行时类型</p>
+<p>编译时类型就是指改对象在编译后的文件里的类型也就是改对象声明时的类型，而运行时类型是指在程序运行时动态指定的类型也就是该对象定义时的类型。如果编译时类型与运行时类型不一致就会发生运行时动态绑定</p>
+<p>比如上面定义的Fruit fruit = new Apple();</p>
+<p>fruit的编译时类型是Fruit。</p>
+<p>我们可以从编译后的class文件看出</p>
+<pre><code class="language-java">#4 = Class              #243          // com/meiliwu/dragon/model/Apple
+#5 = Methodref          #4.#241       // com/meiliwu/dragon/model/Apple.&quot;&lt;init&gt;&quot;:()V
+#6 = Methodref          #244.#245     // com/meiliwu/dragon/model/Fruit.say:()V
+</code></pre>
+<p>我们可以从编译后的文件看出。fruit.say方法在编译后指向的是Fruit的say方法。但是运行时类型是Apple。运行时却是调用Apple的say方法。我们从日志可以看出来。</p>
+<p>如果我们将代码改成这样</p>
+<pre><code class="language-java">Apple fruit = new Apple();
+fruit.say();
+</code></pre>
+<p>打印日志如下：</p>
+<pre><code class="language-Java">12-25 11:25:17.803 9709-9709/com.meiliwu.dragon.debug I/Fruit: say:  i am apple
+</code></pre>
+<p>我们再看看编译后的文件</p>
+<pre><code class="language-java">4 = Class              #243          // com/meiliwu/dragon/model/Apple
+#5 = Methodref          #4.#241       // com/meiliwu/dragon/model/Apple.&quot;&lt;init&gt;&quot;:()V
+#6 = Methodref          #4.#244       // com/meiliwu/dragon/model/Apple.say:()V
+</code></pre>
+<p>从代码可以看出编译时类型与运行时类型一致，这是不会发生动态绑定的，这时可以从编译后的class文件得出验证。</p>
+<h2 id="java的pecs原则">JAVA的PECS原则</h2>
+<p>PECS指“Producer Extends，Consumer Super”</p>
+<p>比如：</p>
+<pre><code class="language-java">List&lt;? extends Fruit&gt; fruitList = new ArrayList&lt;&gt;();
+fruitList.add(new Apple());
+fruitList.add(new Orange());
+</code></pre>
+<p>但是编译器却报了编译错误：</p>
+<p>按理说fruitList是一个持有类型为Fruit及其子类的泛型列表啊，为什么不能往其中添加Fruit的子类呢？</p>
+<p>因为泛型的一大好处就是可以在编译时检查，避免传入不相符的类型可能导致的ClassCastException了。但是声明fruitList的时候没有明确的指定泛型的具体类型，所以编译器无法确认其持有的具体类型，当然也就拒绝了add操作。</p>
+<p>fruitList只是规定了泛型的上限，但是并没有确定具体的类型，也无法确定具体的子类型，可以是Apple，Orange还可能是Banana,所以不能把具体的对象添加进去，不然使用的时候可能导致ClassCastException了。但是可以保证从里面取出来的数据都是Fruit及其子类，而且还是Fruit的某一个子类。</p>
+<p>我们把代码改成下面这样子就可以添加不同的Fruit对象了。</p>
+<p>因为我们规定了fruitList持有的都是Fruit及其父类，可以将Fruit 及其子类都添加进去</p>
+<pre><code class="language-java">List&lt;? super Fruit&gt; fruitList = new ArrayList&lt;&gt;();
+fruitList.add(new Apple());
+fruitList.add(new Orange());
+</code></pre>
+<p>但是</p>
+<pre><code class="language-Java">fruitList.add(new Object());
+</code></pre>
+<p>却不行，why?因为在编译时无法确认具体的fruitList持有的是Fruit的哪一个父类，要想确定就不能用泛型了。所以就无法往里面写入Fruit的父类型对象。</p>
+<p>所以我们可以从Java Collctions copy方法的签名可以看出</p>
+<pre><code class="language-Java">public static &lt;T&gt; void copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src) {
+</code></pre>
+<p>dest集合持有？super T ，可以往里面写入所有T及其子类对象，而src集合持有？ extends T泛型。可以确保的是从里面读取的数据都是T及其子类。所以可以写入dest了。</p>
+<p>PS:Java 类的final方法和static不能复写</p>
+<h2 id="reference">Reference</h2>
+<p>1：https://www.cnblogs.com/ygj0930/p/6554103.html</p>
+<p>2:  http://www.importnew.com/8966.html</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Android中Activity数据的保存和恢复 ]]></title>
+        <id>https://philadelphia.github.io/post/android-zhong-activity-shu-ju-de-bao-cun-he-hui-fu</id>
+        <link href="https://philadelphia.github.io/post/android-zhong-activity-shu-ju-de-bao-cun-he-hui-fu">
+        </link>
+        <updated>2019-08-16T10:03:02.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="android中activity数据的保存和恢复">Android中Activity数据的保存和恢复</h1>
+<p>在我们的APP使用的过程中，总有可能出现各种手滑、被压在后台、甚至突然被杀死的情况。所以对APP中一些临时数据或关键持久型数据，就需要我们使用正确的方式进行保存或恢复。</p>
+<p>突发情况都有哪些？</p>
+<p>因为本文讨论的是当一些突发情况的出现时，对数据的保存和恢复。所以现在总结一下突发情况应该都有哪些？</p>
+<pre><code>1. 点击back键
+2. 点击锁屏键
+3. 点击home键
+4. 其他APP进入前台
+5. 启动了另一个Activity
+6. 屏幕方向旋转
+7. APP被Kill
+</code></pre>
+<h2 id=""></h2>
+<p>现在我们创建一个Activity并复写其中的关键方法：<br>
+​	<br>
+package com.example.activitytest;</p>
+<pre><code>	import android.content.Intent;
+	import android.os.Bundle;
+	import android.support.v7.app.AppCompatActivity;
+	import android.util.Log;
+	import android.widget.Button;
+	
+	import butterknife.BindView;
+	import butterknife.ButterKnife;
+	import butterknife.OnClick;
+	
+	public class MainActivity extends AppCompatActivity {
+</code></pre>
+<p>​	<br>
+@BindView(R.id.btn_secondActivity)<br>
+Button btnSecondActivity;<br>
+private static final String TAG = &quot;MainActivity&quot;;</p>
+<pre><code>    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, &quot;onCreate: &quot;);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.i(TAG, &quot;onRestart: &quot;);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.i(TAG, &quot;onStart: &quot;);
+    }
+
+    @Override
+    protected void onResume() {
+        Log.i(TAG, &quot;onResume: &quot;);
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i(TAG, &quot;onPause: &quot;);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.i(TAG, &quot;onStop: &quot;);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, &quot;onDestroy: &quot;);
+    }
+
+    @OnClick(R.id.btn_secondActivity)
+    public void onViewClicked() {
+        startActivity(new Intent(MainActivity.this, SecondActivity.class));
+    }
+</code></pre>
+<p>​	<br>
+@Override<br>
+protected void onSaveInstanceState(Bundle outState) {<br>
+Log.i(TAG, &quot;onSaveInstanceState: &quot;);<br>
+super.onSaveInstanceState(outState);<br>
+}</p>
+<pre><code>    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        Log.i(TAG, &quot;onRestoreInstanceState: &quot;);
+    }
+
+}
+</code></pre>
+<p>来看看各种情况下，Activity会调用哪些方法。</p>
+<ol>
+<li>
+<p>点击back键</p>
+<pre><code>09-26 16:00:02.124 21636-21636/com.example.activitytest I/MainActivity: onPause: 
+
+09-26 16:00:02.575 21636-21636/com.example.activitytest I/MainActivity: onStop: 
+09-26 16:00:02.575 21636-21636/com.example.activitytest I/MainActivity: onDestroy: 
+</code></pre>
+</li>
+<li>
+<p>点击锁屏键<br>
+​	<br>
+09-26 16:02:14.453 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:02:14.497 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+​	09-26 16:02:14.498 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+<li>
+<p>点击home键<br>
+​	<br>
+09-26 16:02:54.239 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:02:54.306 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+09-26 16:02:54.355 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+<li>
+<p>其他APP进入前台<br>
+​	<br>
+09-26 16:04:02.658 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:04:03.159 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+​	09-26 16:04:03.159 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+<li>
+<p>启动了另一个Activity</p>
+<p>09-26 16:04:02.658 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:04:03.159 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+​	09-26 16:04:03.159 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+<li>
+<p>屏幕方向旋转</p>
+<p>​</p>
+<pre><code class="language-java">09-26 16:04:51.199 21636-21636/com.example.activitytest I/MainActivity: onPause: 
+09-26 16:04:51.199 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState: 
+09-26 16:04:51.201 21636-21636/com.example.activitytest I/MainActivity: onStop: 
+09-26 16:04:51.201 21636-21636/com.example.activitytest I/MainActivity: onDestroy: 
+09-26 16:04:51.220 21636-21636/com.example.activitytest I/MainActivity: onCreate: 
+09-26 16:04:51.250 21636-21636/com.example.activitytest I/MainActivity: onStart: 
+09-26 16:04:51.250 21636-21636/com.example.activitytest I/MainActivity: 
+</code></pre>
+<p>onRestoreInstanceState:<br>
+​	09-26 16:04:51.252 21636-21636/com.example.activitytest I/MainActivity: onResume:</p>
+</li>
+<li>
+<p>APP被Kill<br>
+​	<br>
+09-26 16:05:17.544 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:05:17.601 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+​	09-26 16:05:17.611 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+</ol>
+<p>当APP处在前台，能与用户交互的情况下，出现上述的突发事件时，只有点击back键，onSaveInstanceState方法不会调用。其余的情况下， 该方法一律都会调用，并且onPause方法是必然会调用的.<br>
+我们可以看一下onSaveInstanceState()方法的注释<br>
+​	<br>
+/**<br>
+* Called to retrieve per-instance state from an activity before being killed<br>
+* so that the state can be restored in {@link #onCreate} or<br>
+* {@link #onRestoreInstanceState} (the {@link Bundle} populated by this method<br>
+* will be passed to both).<br>
+*<br>
+* <p>This method is called before an activity may be killed so that when it<br>
+* comes back some time in the future it can restore its state.  For example,<br>
+* if activity B is launched in front of activity A, and at some point activity<br>
+* A is killed to reclaim resources, activity A will have a chance to save the<br>
+* current state of its user interface via this method so that when the user<br>
+* returns to activity A, the state of the user interface can be restored<br>
+* via {@link #onCreate} or {@link #onRestoreInstanceState}.<br>
+*<br>
+* <p>Do not confuse this method with activity lifecycle callbacks such as<br>
+* {@link #onPause}, which is always called when an activity is being placed<br>
+* in the background or on its way to destruction, or {@link #onStop} which<br>
+* is called before destruction.  One example of when {@link #onPause} and<br>
+* {@link #onStop} is called and not this method is when a user navigates back<br>
+* from activity B to activity A: there is no need to call {@link #onSaveInstanceState}<br>
+* on B because that particular instance will never be restored, so the<br>
+* system avoids calling it.  An example when {@link #onPause} is called and<br>
+* not {@link #onSaveInstanceState} is when activity B is launched in front of activity A:<br>
+* the system may avoid calling {@link #onSaveInstanceState} on activity A if it isn't<br>
+* killed during the lifetime of B since the state of the user interface of<br>
+* A will stay intact.<br>
+*<br>
+* <p>The default implementation takes care of most of the UI per-instance<br>
+* state for you by calling {@link android.view.View#onSaveInstanceState()} on each<br>
+* view in the hierarchy that has an id, and by saving the id of the currently<br>
+* focused view (all of which is restored by the default implementation of<br>
+* {@link #onRestoreInstanceState}).  If you override this method to save additional<br>
+* information not captured by each individual view, you will likely want to<br>
+* call through to the default implementation, otherwise be prepared to save<br>
+* all of the state of each view yourself.<br>
+*<br>
+* <p>If called, this method will occur before {@link #onStop}.  There are<br>
+* no guarantees about whether it will occur before or after {@link #onPause}.<br>
+*<br>
+* @param outState Bundle in which to place your saved state.<br>
+* 这个方法在Activity被Killed之前调用去保存Activity的每个实体的状态，所以状态可以在<code>onCreat 	 * 或者</code>onRestoreInstanceState<code>被恢复。通过这个方法传递过去的</code>Bundle<code>* 这个方法在一个Activity被killed之前调用，所以当它将来恢复时可以恢复它的状态。比如：如果Activity B 	 * 在Acitivity A之前入站。如果在某一时刻A被销毁去释放资源，那么A将有机会调用该方法去保存它的用户UI的状态。 	 * 因此，当用户返回A时。用户状态可以被恢复。 	 * 不要将这个方法和Activity的生命周期回掉比如</code>onPause<code>，</code>onPause<code>在Activity被取代或者销毁时调用。</code>onStop<code>在被销毁之前 	 * 调用。一个</code>onPause<code>和</code>onStop<code>被调用但是</code>onSaveInstanceState<code>没被调用的情况是当用户从B回退到A时。不需要调用B的 	 *</code>onSaveInstanceState<code>* 一个</code>onPause<code>被调用但是</code>onSaveInstanceState<code>没被Blaunch 在A的上面时。系统避免调用A的</code>onSaveInstanceState<code>* 如果A在B的生命周期内没有被销毁。所以A的用户状态将保持不变。 	 * 可以通过给View设置ID。可以自动保存每个View的状态。 	 * 如果这个方法被调用了。这个方法将在</code>onStop<code>之前调用。但是不保证和</code>onPause`的调用顺序。<br>
+*</p>
+<p>google工程师们对onSaveInstanceState如此设计就是让其完成对一些临时的、非永久数据存储并进行恢复。但是一些永久性质的数据，比如插入数据库的操作，我们应该在什么方法中对其进行保存呢？</p>
+<pre><code>onPause
+onPuase的解释是：onPause(), onStop(), onDestroy() are &quot;killable after&quot; lifecycle methods. This indicates whether or not the system can kill the process hosting the activity at any time after the method returns, without executing another line of the activity's code. Because onPause() is the first of the three, once the activity is created, onPause() is the last method that's guaranteed to be called before the process can be killed—if the system must recover memory in an emergency, then onStop() and onDestroy() might not be called. Therefore, you should use onPause() to write crucial persistent data (such as user edits) to storage. However, you should be selective about what information must be retained during onPause(), because any blocking procedures in this method block the transition to the next activity and slow the user experience.
+</code></pre>
+<p>翻译过来就是：无论出现怎样的情况，比如程序突然死亡了，能保证的就是onPause方法是一定会调用的，而onStop和onDestory方法并不一定，所以这个特性使得onPause是持久化相关数据的最后的可靠时机。当然onPause方法不能做大量的操作，这会影响下一个Activity入栈</p>
+<p>最后	我们来一句话总结一下：</p>
+<h2 id="临时数据使用onsaveinstancestate保存恢复永久性数据使用onpause方法保存">临时数据使用onSaveInstanceState保存恢复，永久性数据使用onPause方法保存。</h2>
+<p>参考：</p>
+<p>1.<a href="http://www.jianshu.com/p/6622434511f7" title="http://www.jianshu.com/p/6622434511f7">http://www.jianshu.com/p/6622434511f7</a></p>
+<p>2.<a href="http://blog.csdn.net/lonelyroamer/article/details/8927940" title="http://blog.csdn.net/lonelyroamer/article/details/8927940">http://blog.csdn.net/lonelyroamer/article/details/8927940</a></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[ Android 系统的事件分发机制分析 ]]></title>
+        <id>https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi</id>
+        <link href="https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi">
+        </link>
+        <updated>2019-08-16T10:02:47.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="android-系统的事件分发机制分析">Android 系统的事件分发机制分析</h1>
+<p>Android中可以相应事件的控件有View和ViewGroup。其实ViewGroup也是一种View。只不过大部分情况下ViewGroup作为一种View容器来使用了。<br>
+View中有三个关键的方法</p>
+<pre><code>1. public boolean dispatchTouchEvent(MotionEvent event)		//事件分发的方法
+2. public boolean onTouchEvent(MotionEvent event)			//事件处理的方法
+</code></pre>
+<p>ViewGroup中多了以下方法</p>
+<pre><code>public boolean onInterceptTouchEvent(MotionEvent ev)		//事件拦截的方法
+</code></pre>
+<p>Android中touch事件的传递，绝对是先传递到ViewGroup，再传递到View的</p>
+<p>当你点击了某个控件(touch事件发生)，首先会去调用该控件所在布局(ViewGroup)的dispatchTouchEvent方法，然后在布局的</p>
+<p>dispatchTouchEvent方法中找到被点击的相应控件，再去调用该控件的dispatchTouchEvent方法。</p>
+<pre><code>public boolean dispatchTouchEvent(MotionEvent ev) {  
+final int action = ev.getAction();  
+final float xf = ev.getX();  
+final float yf = ev.getY();  
+final float scrolledXFloat = xf + mScrollX;  
+final float scrolledYFloat = yf + mScrollY;  
+final Rect frame = mTempRect;  
+boolean disallowIntercept = (mGroupFlags &amp; FLAG_DISALLOW_INTERCEPT) != 0;  
+if (action == MotionEvent.ACTION_DOWN) {  
+    if (mMotionTarget != null) {  
+        mMotionTarget = null;  
+    }  
+    if (disallowIntercept || !onInterceptTouchEvent(ev)) {  
+        ev.setAction(MotionEvent.ACTION_DOWN);  
+        final int scrolledXInt = (int) scrolledXFloat;  
+        final int scrolledYInt = (int) scrolledYFloat;  
+        final View[] children = mChildren;  
+        final int count = mChildrenCount;  
+        for (int i = count - 1; i &gt;= 0; i--) {  
+            final View child = children[i];  
+            if ((child.mViewFlags &amp; VISIBILITY_MASK) == VISIBLE  
+                    || child.getAnimation() != null) {  
+                child.getHitRect(frame);  
+                if (frame.contains(scrolledXInt, scrolledYInt)) {  
+                    final float xc = scrolledXFloat - child.mLeft;  
+                    final float yc = scrolledYFloat - child.mTop;  
+                    ev.setLocation(xc, yc);  
+                    child.mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+                    if (child.dispatchTouchEvent(ev))  {  
+                        mMotionTarget = child;  
+                        return true;  
+                    }  
+                }  
+            }  
+        }  
+    }  
+}  
+boolean isUpOrCancel = (action == MotionEvent.ACTION_UP) ||  
+        (action == MotionEvent.ACTION_CANCEL);  
+if (isUpOrCancel) {  
+    mGroupFlags &amp;= ~FLAG_DISALLOW_INTERCEPT;  
+}  
+final View target = mMotionTarget;  
+if (target == null) {  
+    ev.setLocation(xf, yf);  
+    if ((mPrivateFlags &amp; CANCEL_NEXT_UP_EVENT) != 0) {  
+        ev.setAction(MotionEvent.ACTION_CANCEL);  
+        mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    }  
+    return super.dispatchTouchEvent(ev);  
+}  
+if (!disallowIntercept &amp;&amp; onInterceptTouchEvent(ev)) {  
+    final float xc = scrolledXFloat - (float) target.mLeft;  
+    final float yc = scrolledYFloat - (float) target.mTop;  
+    mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    ev.setAction(MotionEvent.ACTION_CANCEL);  
+    ev.setLocation(xc, yc);  
+    if (!target.dispatchTouchEvent(ev)) {  
+    }  
+    mMotionTarget = null;  
+    return true;  
+}  
+if (isUpOrCancel) {  
+    mMotionTarget = null;  
+}  
+final float xc = scrolledXFloat - (float) target.mLeft;  
+final float yc = scrolledYFloat - (float) target.mTop;  
+ev.setLocation(xc, yc);  
+if ((target.mPrivateFlags &amp; CANCEL_NEXT_UP_EVENT) != 0) {  
+    ev.setAction(MotionEvent.ACTION_CANCEL);  
+    target.mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    mMotionTarget = null;  
+}  
+return target.dispatchTouchEvent(ev);  
+}  
+</code></pre>
+<p>从上面的代码可以看出。如果viewgroup的disallowIntercept属性为false(默认是false，也可以通过requestDisallowInterceptTouchEvent方法对这个值进行修改)，或者onInterceptTouchEvent(ev)返回了true，那ViewGroup的<br>
+dispatchTouchEvent()方法也会返回false，事件就不会往下分发了，如果ViewGroup禁用了拦截机制(disallowIntercept=true)或者没有拦截事件(返回false)，事件就会分发给ViewGroup中的 子view了。然后子view开始处理事件了。</p>
+<p><img src="http://img.blog.csdn.net/20130629200236578?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvc2lueXU4OTA4MDc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>从图中可以看出当ViewGroup分发事件的时候先调用自己的拦截方法，如果拦截方法返回了true，那么事件就不在向下传递给view了。然后ViewGroup就开始自己处理事件了。如果ViewGroup拦截方法返回了false，那么事件就会向下传递给view，然后view开始调用自己的分发方法，然后调用自己的事件处理方法。</p>
+<h2 id="总结">总结</h2>
+<p>如果View设置了<code>setOnTouchListener()</code>方法和<code>setOnLongClick()</code>和 <code>setOnClickListener()</code>方法，那默认情况下onTouch方法会先于<br>
+<code>onClick()</code>, <code>onLongClick()</code>方法调用。</p>
+<pre><code>  button.setOnTouchListener(new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            Log.i(TAG, &quot;button------onTouch: &quot; + event.getAction());
+            return false;
+        }
+    });
+
+
+button.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            Log.i(TAG, &quot;button --- onClick: &quot;);
+        }
+    });
+
+
+09-15 14:08:15.184 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button------onTouch: 0(Down)
+09-15 14:08:15.254 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button------onTouch: 1(Up)
+09-15 14:08:15.273 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button --- onClick:(onClick)
+</code></pre>
+<hr>
+<p>view的<code>dispatchTouchEvent</code>方法（精简后代码）。</p>
+<pre><code>	public boolean dispatchTouchEvent(MotionEvent event) {
+    ...
+    boolean result = false;	// result 为返回值，主要作用是告诉调用者事件是否已经被消费。
+    if (onFilterTouchEventForSecurity(event)) {
+        ListenerInfo li = mListenerInfo;
+        /** 
+         * 如果设置了OnTouchListener，并且当前 View 可点击，就调用监听器的 onTouch 方法，
+         * 如果 onTouch 方法返回值为 true，就设置 result 为 true。
+         */
+        if (li != null &amp;&amp; li.mOnTouchListener != null
+                &amp;&amp; (mViewFlags &amp; ENABLED_MASK) == ENABLED
+                &amp;&amp; li.mOnTouchListener.onTouch(this, event)) {
+            result = true;
+        }
+      
+        /** 
+         * 如果 result 为 false，则调用自身的 onTouchEvent。
+         * 如果 onTouchEvent 返回值为 true，则设置 result 为 true。
+         */
+        if (!result &amp;&amp; onTouchEvent(event)) {
+            result = true;
+        }
+    }
+    ...
+    return result;
+}	
+</code></pre>
+<p>可以看出如果设置了<code>onTouchListener</code>的话。优先调用<code>onTouchListener</code>的<code>onTouch()</code>方法。<br>
+但是如果在OnTouch方法里面返回true的话，就代表消费了事件，该事件不在往下分发，所以View的 <code>onClick</code>，<code>onLongClick</code> 方法就不会被调用了。因为<code>onClick()</code>and <code>onLongClick（）</code>是在view的<code>onTouchevent()</code>方法中调用的。<br>
+如果<code>onTouchListener</code>的<code>onTouch()</code>返回false的话。才会调用view的<code>onTouchEvent(event)</code>方法。</p>
+<pre><code>	public boolean onTouchEvent(MotionEvent event) {
+    ...
+    final int action = event.getAction();
+  	// 检查各种 clickable
+    if (((viewFlags &amp; CLICKABLE) == CLICKABLE ||
+            (viewFlags &amp; LONG_CLICKABLE) == LONG_CLICKABLE) ||
+            (viewFlags &amp; CONTEXT_CLICKABLE) == CONTEXT_CLICKABLE) {
+        switch (action) {
+            case MotionEvent.ACTION_UP:
+                ...
+                removeLongPressCallback();  // 移除长按
+                ...
+                performClick();             // 检查单击
+                ...
+                break;
+            case MotionEvent.ACTION_DOWN:
+                ...
+                checkForLongClick(0);       // 检测长按
+                ...
+                break;
+            ...
+        }
+        return true;                        // ◀︎表示事件被消费
+    }
+    return false;
+}
+</code></pre>
+<p>从View的<code>onTouchevent（）</code>方法中可以看出。<br>
+如果view设置了<code>clickable</code>,<code>longClickable</code>，<code>contextClickable</code>属性中的任何一个。<br>
+或者设置了 <code>onClickListener</code>，<code>onLongClickListener</code>，<code>onContextClickListener</code>中的任何一个<br>
+那个该view就会消费事件。不然不消费事件。，</p>
+<p>从<code>dispatchTouchEvent</code> 和<code>onTouchEvent()</code>方法可以看出。</p>
+<p>1	事件的调度顺序为：<br>
+onTouchListener &gt; onTouchEvent &gt; onLongClickListener &gt; onClickListener</p>
+<p>2: 如果View为Disabled。则：<code>OntouchListener</code>里面的方法不会执行。但是会执行<code>OnTouchEvent(event)</code>方法，也就是说即使view是disabled的，依然可以相应onClick事件。</p>
+<p>3： onTouchEvent方法中的ACTION_UP分支中触发onClick方法。并在这里移除长按监听。因为长按不需要处理ACTION_UP事件。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[# Android 中内部存储和外部存储分析 #]]></title>
+        <id>https://philadelphia.github.io/post/android-zhong-nei-bu-cun-chu-he-wai-bu-cun-chu-fen-xi</id>
+        <link href="https://philadelphia.github.io/post/android-zhong-nei-bu-cun-chu-he-wai-bu-cun-chu-fen-xi">
+        </link>
+        <updated>2019-08-16T10:02:15.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="android-中内部存储和外部存储分析">Android 中内部存储和外部存储分析</h1>
+<p>Android系统存储相关有这样几个概念，内存，内部存储，外部存储</p>
+<p>内存，RAM ，在移动设备中做系统运行用</p>
+<pre><code>随机存储器，Read Access Memory
+</code></pre>
+<p>存储器， ROM，在移动设备中做数据存储用</p>
+<pre><code>只读存储器，Read Only Memory
+</code></pre>
+<blockquote>
+<p>内部存储 <code>InternalStorage</code></p>
+<p>外部存储<br>
+<code>ExternalStorage</code></p>
+</blockquote>
+<p>Android 系统自身自带有存储，另外也可以通过 SD 卡来扩充存储空间。 前者空间较小，后者空间大，但后者不一定可用。 开发应用，处理本地数据存取时，可能会遇到这些问题：</p>
+<blockquote>
+<ol>
+<li>需要判断 SD 卡是否可用: 占用过多机身内部存储，容易招致用户反感，优先将数据存放于 SD 卡;</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="2">
+<li>应用数据存放路径，同其他应用应该保持一致，应用卸载时，清除数据:</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="3">
+<li>标新立异在 SD 卡根目录建一个目录，招致用户反感</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="4">
+<li>用户卸载应用后，残留目录或者数据在用户机器上，招致用户反感</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="5">
+<li>需要判断两者的可用空间: SD 卡存在时，可用空间反而小于机身内部存储，这时应该选用机身存储;</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="6">
+<li>数据安全性，本应用数据不愿意被其他应用读写;</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="7">
+<li>图片缓存等，不应该被扫描加入到用户相册等媒体库中去。</li>
+</ol>
+</blockquote>
+<p>那么究竟什么是内部存储什么是外部存储呢？<br>
+首先我们打开DDMS，有一个File Explorer，如下：<br>
+<img src="http://img.blog.csdn.net/20151211224232123?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""><br>
+这里有三个文件夹需要我们重视，一个是data，一个是mnt，一个是storage，我们下面就详细说说这三个文件夹。</p>
+<h2 id="1内部存储">1.内部存储</h2>
+<p>data文件夹就是我们常说的内部存储，当我们打开data文件夹之后（没有root的手机不能打开该文件夹），里边有两个文件夹值得我们关注，如下：<br>
+<img src="http://img.blog.csdn.net/20151211224609474?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>一个文件夹是app文件夹，还有一个文件夹就是data文件夹，app文件夹里存放着我们所有安装的app的apk文件，其实，当我们调试一个app的时候，可以看到控制台输出的内容，有一项是uploading .....就是上传我们的apk到这个文件夹，上传成功之后才开始安装。另一个重要的文件夹就是data文件夹了，这个文件夹里边都是一些包名，打开这些包名之后我们会看到这样的一些文件：</p>
+<pre><code>1.data/data/包名/shared_prefs
+2.data/data/包名/databases
+3.data/data/包名/files
+4.data/data/包名/cache
+</code></pre>
+<p>如果打开过data文件，应该都知道这些文件夹是干什么用的，我们在使用sharedPreferenced的时候，将数据持久化存储于本地，其实就是存在这个文件中的xml文件里，我们App里边的数据库文件就存储于databases文件夹中，还有我们的普通数据存储在files中，缓存文件存储在cache文件夹中，存储在这里的文件我们都称之为内部存储。</p>
+<h2 id="2外部存储">2.外部存储</h2>
+<p>外部存储才是我们平时操作最多的，外部存储一般就是我们上面看到的storage文件夹，当然也有可能是mnt文件夹，这个不同厂家有可能不一样。<br>
+一般来说，在storage文件夹中有一个sdcard文件夹，这个文件夹中的文件又分为两类，一类是公有目录，还有一类是私有目录，其中的公有目录有九大类，比如<code>DCIM</code>、<code>MUSIC</code>、<code>Ringtons</code>、<code>Pictures</code>、<code>Alarms</code>,<code>Movies</code>、<code>Documents</code>、<code>Notifications</code>等这种系统为我们创建的文件夹，私有目录就是<code>Android</code>这个文件夹，这个文件夹打开之后里边有两个文件夹：<code>data</code>，<code>media</code>，打开这个data文件夹，里边有许多包名组成的文件夹。每个包文件夹下又包含两个文件夹：<code>cache</code> 和<code>files</code></p>
+<pre><code>	DIRECTORY_MUSIC,
+    DIRECTORY_PODCASTS,
+    DIRECTORY_RINGTONES,
+    DIRECTORY_ALARMS,
+    DIRECTORY_NOTIFICATIONS,
+    DIRECTORY_PICTURES,
+    DIRECTORY_MOVIES,
+    DIRECTORY_DOWNLOADS,
+    DIRECTORY_DCIM,
+    DIRECTORY_DOCUMENTS
+</code></pre>
+<p>以上全都是Environment类中定义的静态变量</p>
+<h2 id="3操作存储空间">3.操作存储空间</h2>
+<p>首先，经过上面的分析，大家已经明白了，什么是内部存储，什么是外部存储，以及这两种存储方式分别存储在什么位置，一般来说，我们不会自己去操作内部存储空间，没有root权限的话，我们也没法操作内部存储空间，事实上内部存储主要是由系统来维护的。不过在代码中我们是可以访问到这个文件夹的。由于内部存储空间有限，在开发中我们一般都是操作外部存储空间，Google官方建议我们App的数据应该存储在外部存储的私有目录中该App的包名下，这样当用户卸载掉App之后，相关的数据会一并删除，如果你直接在/storage/sdcard目录下创建了一个应用的文件夹，那么当你删除应用的时候，这个文件夹就不会被删除。<br>
+经过以上的介绍，我们可以总结出下面一个表格：<br>
+<img src="http://img.blog.csdn.net/20151212091841385?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>一目了然，什么是内部存储，什么是外部存储。<br>
+如果按照路径的特征，我们又可以将文件存储的路径分为两大类，一类是路径中含有包名的，一类是路径中不含有包名的，含有包名的路径，因为和某个App有关，所以对这些文件夹的访问都是调用Context里边的方法，而不含有包名的路径，和某一个App无关，我们可以通过Environment中的方法来访问。如下图：<br>
+<img src="http://img.blog.csdn.net/20151212094211922?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>大家看到，有包名的路径我们都是调用Context中的方法来获得，没有包名的路径，我们直接调用Environment中的方法获得，那么其中有两个方法需要传入一个String类型的参数，这个参数我们使用了Environment中的常量，参数的意思是我们要访问这个路径下的哪个文件夹，比如getExternalFilesDir方法，我们看看它的源码：</p>
+<pre><code>/** 
+ * 
+ * @param type The type of files directory to return.  May be null for 
+ * the root of the files directory or one of 
+ * the following Environment constants for a subdirectory: 
+ * {@link android.os.Environment#DIRECTORY_MUSIC}, 
+ * {@link android.os.Environment#DIRECTORY_PODCASTS}, 
+ * {@link android.os.Environment#DIRECTORY_RINGTONES}, 
+ * {@link android.os.Environment#DIRECTORY_ALARMS}, 
+ * {@link android.os.Environment#DIRECTORY_NOTIFICATIONS}, 
+ * {@link android.os.Environment#DIRECTORY_PICTURES}, or 
+ * {@link android.os.Environment#DIRECTORY_MOVIES}. 
+ * 
+ * @return The path of the directory holding application files 
+ * on external storage.  Returns null if external storage is not currently 
+ * mounted so it could not ensure the path exists; you will need to call 
+ * this method again when it is available. 
+ * 
+ * @see #getFilesDir 
+ * @see android.os.Environment#getExternalStoragePublicDirectory 
+ */  
+@Nullable  
+public abstract File getExternalFilesDir(@Nullable String type);  
+</code></pre>
+<p>它的注释非常多，我这里只列出其中一部分，我们看到，我们可以访问files文件夹下的Music文件夹、Movies文件夹等等好几种。<br>
+说到这里，我想大家对内部存储、外部存储该有了一个清晰的认识了吧。我们在开发中，<strong>不建议往内部存储中写太多的数据，毕竟空间有限。外部存储在使用的时候最好能够将文件存放在私有目录下，这样有利于系统维护，也避免用户的反感</strong>。<br>
+现在我们再来看看我们一开始提出的问题，当我们点击清除数据的时候清除的是哪里的数据呢？毫无疑问，当然是内部存储目录中相应的files和cache文件夹中的文件和外部存储中相应的files和cache文件夹中的文件，至于这些文件夹的路径我想你应该已经明白了。<br>
+好了，最后再送给大家一个文件操作工具类：</p>
+<pre><code>public class SDCardHelper {  
+
+    // 判断SD卡是否被挂载  
+    public static boolean isSDCardMounted() {  
+        // return Environment.getExternalStorageState().equals(&quot;mounted&quot;);  
+        return Environment.getExternalStorageState().equals(  
+                Environment.MEDIA_MOUNTED);  
+}  
+
+    // 获取SD卡的根目录  
+    public static String getSDCardBaseDir() {  
+        if (isSDCardMounted()) {  
+            return Environment.getExternalStorageDirectory().getAbsolutePath();  
+        }  
+        return null;  
+    }  
+  
+    // 获取SD卡的完整空间大小，返回MB  
+    public static long getSDCardSize() {  
+        if (isSDCardMounted()) {  
+            StatFs fs = new StatFs(getSDCardBaseDir());  
+            long count = fs.getBlockCountLong();  
+            long size = fs.getBlockSizeLong();  
+            return count * size / 1024 / 1024;  
+        }  
+        return 0;  
+    }  
+  
+    // 获取SD卡的剩余空间大小  
+    public static long getSDCardFreeSize() {  
+        if (isSDCardMounted()) {  
+            StatFs fs = new StatFs(getSDCardBaseDir());  
+            long count = fs.getFreeBlocksLong();  
+            long size = fs.getBlockSizeLong();  
+            return count * size / 1024 / 1024;  
+        }  
+        return 0;  
+    }  
+  
+    // 获取SD卡的可用空间大小  
+    public static long getSDCardAvailableSize() {  
+        if (isSDCardMounted()) {  
+            StatFs fs = new StatFs(getSDCardBaseDir());  
+            long count = fs.getAvailableBlocksLong();  
+            long size = fs.getBlockSizeLong();  
+            return count * size / 1024 / 1024;  
+        }  
+        return 0;  
+    }  
+  
+    // 往SD卡的公有目录下保存文件  
+    public static boolean saveFileToSDCardPublicDir(byte[] data, String type,  
+            String fileName) {  
+        BufferedOutputStream bos = null;  
+        if (isSDCardMounted()) {  
+            File file = Environment.getExternalStoragePublicDirectory(type);  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                bos.write(data);  
+                bos.flush();  
+                return true;  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                try {  
+                    bos.close();  
+                } catch (IOException e) {  
+                    // TODO Auto-generated catch block  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+        return false;  
+    }  
+  
+    // 往SD卡的自定义目录下保存文件  
+    public static boolean saveFileToSDCardCustomDir(byte[] data, String dir,  
+            String fileName) {  
+        BufferedOutputStream bos = null;  
+        if (isSDCardMounted()) {  
+            File file = new File(getSDCardBaseDir() + File.separator + dir);  
+            if (!file.exists()) {  
+                file.mkdirs();// 递归创建自定义目录  
+            }  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                bos.write(data);  
+                bos.flush();  
+                return true;  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                try {  
+                    bos.close();  
+                } catch (IOException e) {  
+                    // TODO Auto-generated catch block  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+        return false;  
+    }  
+  
+    // 往SD卡的私有Files目录下保存文件  
+    public static boolean saveFileToSDCardPrivateFilesDir(byte[] data,  
+            String type, String fileName, Context context) {  
+        BufferedOutputStream bos = null;  
+        if (isSDCardMounted()) {  
+            File file = context.getExternalFilesDir(type);  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                bos.write(data);  
+                bos.flush();  
+                return true;  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                try {  
+                    bos.close();  
+                } catch (IOException e) {  
+                    // TODO Auto-generated catch block  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+    return false;  
+    }  
+  
+    // 往SD卡的私有Cache目录下保存文件  
+    public static boolean saveFileToSDCardPrivateCacheDir(byte[] data,  
+            String fileName, Context context) {  
+        BufferedOutputStream bos = null;  
+        if (isSDCardMounted()) {  
+            File file = context.getExternalCacheDir();  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                bos.write(data);  
+                bos.flush();  
+                return true;  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                try {  
+                    bos.close();  
+                } catch (IOException e) {  
+                    // TODO Auto-generated catch block  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+        return false;  
+    }  
+  
+    // 保存bitmap图片到SDCard的私有Cache目录  
+    public static boolean saveBitmapToSDCardPrivateCacheDir(Bitmap bitmap,  
+            String fileName, Context context) {  
+        if (isSDCardMounted()) {  
+            BufferedOutputStream bos = null;  
+            // 获取私有的Cache缓存目录  
+            File file = context.getExternalCacheDir();  
+  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                if (fileName != null  
+                        &amp;&amp; (fileName.contains(&quot;.png&quot;) || fileName  
+                                .contains(&quot;.PNG&quot;))) {  
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);  
+                } else {  
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos);  
+                }  
+                bos.flush();  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                if (bos != null) {  
+                    try {  
+                        bos.close();  
+                    } catch (IOException e) {  
+                        e.printStackTrace();  
+                    }  
+                }  
+            }  
+            return true;  
+        } else {  
+            return false;  
+        }  
+    }  
+  
+    // 从SD卡获取文件  
+    public static byte[] loadFileFromSDCard(String fileDir) {  
+        BufferedInputStream bis = null;  
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();  
+  
+        try {  
+            bis = new BufferedInputStream(  
+                    new FileInputStream(new File(fileDir)));  
+            byte[] buffer = new byte[8 * 1024];  
+            int c = 0;  
+            while ((c = bis.read(buffer)) != -1) {  
+                baos.write(buffer, 0, c);  
+                baos.flush();  
+            }  
+            return baos.toByteArray();  
+        } catch (Exception e) {  
+            e.printStackTrace();  
+        } finally {  
+            try {  
+                baos.close();  
+                bis.close();  
+            } catch (IOException e) {  
+                e.printStackTrace();  
+            }  
+        }  
+        return null;  
+    }  
+  
+    // 从SDCard中寻找指定目录下的文件，返回Bitmap  
+    public Bitmap loadBitmapFromSDCard(String filePath) {  
+        byte[] data = loadFileFromSDCard(filePath);  
+        if (data != null) {  
+            Bitmap bm = BitmapFactory.decodeByteArray(data, 0, data.length);  
+            if (bm != null) {  
+                return bm;  
+            }  
+        }  
+        return null;  
+    }  
+  
+    // 获取SD卡公有目录的路径  
+    public static String getSDCardPublicDir(String type) {  
+        return Environment.getExternalStoragePublicDirectory(type).toString();  
+    }  
+  
+    // 获取SD卡私有Cache目录的路径  
+    public static String getSDCardPrivateCacheDir(Context context) {  
+        return context.getExternalCacheDir().getAbsolutePath();  
+    }  
+  
+    // 获取SD卡私有Files目录的路径  
+    public static String getSDCardPrivateFilesDir(Context context, String type) {  
+        return context.getExternalFilesDir(type).getAbsolutePath();  
+    }  
+  
+    public static boolean isFileExist(String filePath) {  
+        File file = new File(filePath);  
+        return file.isFile();  
+    }  
+  
+    // 从sdcard中删除文件  
+    public static boolean removeFileFromSDCard(String filePath) {  
+        File file = new File(filePath);  
+        if (file.exists()) {  
+            try {  
+                file.delete();  
+                return true;  
+            } catch (Exception e) {  
+                return false;  
+            }  
+        } else {  
+            return false;  
+        }  
+    }  
+}  
+</code></pre>
+<p>copy自：</p>
+<p><a href="http://blog.csdn.net/u012702547/article/details/50269639">http://blog.csdn.net/u012702547/article/details/50269639</a></p>
+<p><a href="https://www.liaohuqiu.net/cn/posts/storage-in-android/">https://www.liaohuqiu.net/cn/posts/storage-in-android/</a></p>
+<p>Ths</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Android:View Inflation 分析]]></title>
         <id>https://philadelphia.github.io/post/androidview-inflation-fen-xi</id>

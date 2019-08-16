@@ -1,0 +1,353 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title> Android 系统的事件分发机制分析  | philadelphia</title>
+<meta name="description" content="德不孤必有邻" />
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565949849808">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://philadelphia.github.io">
+  <img class="avatar" src="https://philadelphia.github.io/images/avatar.png?v=1565949849808" alt="">
+  </a>
+  <h1 class="site-title">
+    philadelphia
+  </h1>
+  <p class="site-description">
+    德不孤必有邻
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu" target="_blank">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+               Android 系统的事件分发机制分析 
+            </h2>
+            <div class="post-info">
+              <span>
+                2019-08-16
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="android-系统的事件分发机制分析">Android 系统的事件分发机制分析</h1>
+<p>Android中可以相应事件的控件有View和ViewGroup。其实ViewGroup也是一种View。只不过大部分情况下ViewGroup作为一种View容器来使用了。<br>
+View中有三个关键的方法</p>
+<pre><code>1. public boolean dispatchTouchEvent(MotionEvent event)		//事件分发的方法
+2. public boolean onTouchEvent(MotionEvent event)			//事件处理的方法
+</code></pre>
+<p>ViewGroup中多了以下方法</p>
+<pre><code>public boolean onInterceptTouchEvent(MotionEvent ev)		//事件拦截的方法
+</code></pre>
+<p>Android中touch事件的传递，绝对是先传递到ViewGroup，再传递到View的</p>
+<p>当你点击了某个控件(touch事件发生)，首先会去调用该控件所在布局(ViewGroup)的dispatchTouchEvent方法，然后在布局的</p>
+<p>dispatchTouchEvent方法中找到被点击的相应控件，再去调用该控件的dispatchTouchEvent方法。</p>
+<pre><code>public boolean dispatchTouchEvent(MotionEvent ev) {  
+final int action = ev.getAction();  
+final float xf = ev.getX();  
+final float yf = ev.getY();  
+final float scrolledXFloat = xf + mScrollX;  
+final float scrolledYFloat = yf + mScrollY;  
+final Rect frame = mTempRect;  
+boolean disallowIntercept = (mGroupFlags &amp; FLAG_DISALLOW_INTERCEPT) != 0;  
+if (action == MotionEvent.ACTION_DOWN) {  
+    if (mMotionTarget != null) {  
+        mMotionTarget = null;  
+    }  
+    if (disallowIntercept || !onInterceptTouchEvent(ev)) {  
+        ev.setAction(MotionEvent.ACTION_DOWN);  
+        final int scrolledXInt = (int) scrolledXFloat;  
+        final int scrolledYInt = (int) scrolledYFloat;  
+        final View[] children = mChildren;  
+        final int count = mChildrenCount;  
+        for (int i = count - 1; i &gt;= 0; i--) {  
+            final View child = children[i];  
+            if ((child.mViewFlags &amp; VISIBILITY_MASK) == VISIBLE  
+                    || child.getAnimation() != null) {  
+                child.getHitRect(frame);  
+                if (frame.contains(scrolledXInt, scrolledYInt)) {  
+                    final float xc = scrolledXFloat - child.mLeft;  
+                    final float yc = scrolledYFloat - child.mTop;  
+                    ev.setLocation(xc, yc);  
+                    child.mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+                    if (child.dispatchTouchEvent(ev))  {  
+                        mMotionTarget = child;  
+                        return true;  
+                    }  
+                }  
+            }  
+        }  
+    }  
+}  
+boolean isUpOrCancel = (action == MotionEvent.ACTION_UP) ||  
+        (action == MotionEvent.ACTION_CANCEL);  
+if (isUpOrCancel) {  
+    mGroupFlags &amp;= ~FLAG_DISALLOW_INTERCEPT;  
+}  
+final View target = mMotionTarget;  
+if (target == null) {  
+    ev.setLocation(xf, yf);  
+    if ((mPrivateFlags &amp; CANCEL_NEXT_UP_EVENT) != 0) {  
+        ev.setAction(MotionEvent.ACTION_CANCEL);  
+        mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    }  
+    return super.dispatchTouchEvent(ev);  
+}  
+if (!disallowIntercept &amp;&amp; onInterceptTouchEvent(ev)) {  
+    final float xc = scrolledXFloat - (float) target.mLeft;  
+    final float yc = scrolledYFloat - (float) target.mTop;  
+    mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    ev.setAction(MotionEvent.ACTION_CANCEL);  
+    ev.setLocation(xc, yc);  
+    if (!target.dispatchTouchEvent(ev)) {  
+    }  
+    mMotionTarget = null;  
+    return true;  
+}  
+if (isUpOrCancel) {  
+    mMotionTarget = null;  
+}  
+final float xc = scrolledXFloat - (float) target.mLeft;  
+final float yc = scrolledYFloat - (float) target.mTop;  
+ev.setLocation(xc, yc);  
+if ((target.mPrivateFlags &amp; CANCEL_NEXT_UP_EVENT) != 0) {  
+    ev.setAction(MotionEvent.ACTION_CANCEL);  
+    target.mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    mMotionTarget = null;  
+}  
+return target.dispatchTouchEvent(ev);  
+}  
+</code></pre>
+<p>从上面的代码可以看出。如果viewgroup的disallowIntercept属性为false(默认是false，也可以通过requestDisallowInterceptTouchEvent方法对这个值进行修改)，或者onInterceptTouchEvent(ev)返回了true，那ViewGroup的<br>
+dispatchTouchEvent()方法也会返回false，事件就不会往下分发了，如果ViewGroup禁用了拦截机制(disallowIntercept=true)或者没有拦截事件(返回false)，事件就会分发给ViewGroup中的 子view了。然后子view开始处理事件了。</p>
+<p><img src="http://img.blog.csdn.net/20130629200236578?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvc2lueXU4OTA4MDc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>从图中可以看出当ViewGroup分发事件的时候先调用自己的拦截方法，如果拦截方法返回了true，那么事件就不在向下传递给view了。然后ViewGroup就开始自己处理事件了。如果ViewGroup拦截方法返回了false，那么事件就会向下传递给view，然后view开始调用自己的分发方法，然后调用自己的事件处理方法。</p>
+<h2 id="总结">总结</h2>
+<p>如果View设置了<code>setOnTouchListener()</code>方法和<code>setOnLongClick()</code>和 <code>setOnClickListener()</code>方法，那默认情况下onTouch方法会先于<br>
+<code>onClick()</code>, <code>onLongClick()</code>方法调用。</p>
+<pre><code>  button.setOnTouchListener(new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            Log.i(TAG, &quot;button------onTouch: &quot; + event.getAction());
+            return false;
+        }
+    });
+
+
+button.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            Log.i(TAG, &quot;button --- onClick: &quot;);
+        }
+    });
+
+
+09-15 14:08:15.184 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button------onTouch: 0(Down)
+09-15 14:08:15.254 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button------onTouch: 1(Up)
+09-15 14:08:15.273 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button --- onClick:(onClick)
+</code></pre>
+<hr>
+<p>view的<code>dispatchTouchEvent</code>方法（精简后代码）。</p>
+<pre><code>	public boolean dispatchTouchEvent(MotionEvent event) {
+    ...
+    boolean result = false;	// result 为返回值，主要作用是告诉调用者事件是否已经被消费。
+    if (onFilterTouchEventForSecurity(event)) {
+        ListenerInfo li = mListenerInfo;
+        /** 
+         * 如果设置了OnTouchListener，并且当前 View 可点击，就调用监听器的 onTouch 方法，
+         * 如果 onTouch 方法返回值为 true，就设置 result 为 true。
+         */
+        if (li != null &amp;&amp; li.mOnTouchListener != null
+                &amp;&amp; (mViewFlags &amp; ENABLED_MASK) == ENABLED
+                &amp;&amp; li.mOnTouchListener.onTouch(this, event)) {
+            result = true;
+        }
+      
+        /** 
+         * 如果 result 为 false，则调用自身的 onTouchEvent。
+         * 如果 onTouchEvent 返回值为 true，则设置 result 为 true。
+         */
+        if (!result &amp;&amp; onTouchEvent(event)) {
+            result = true;
+        }
+    }
+    ...
+    return result;
+}	
+</code></pre>
+<p>可以看出如果设置了<code>onTouchListener</code>的话。优先调用<code>onTouchListener</code>的<code>onTouch()</code>方法。<br>
+但是如果在OnTouch方法里面返回true的话，就代表消费了事件，该事件不在往下分发，所以View的 <code>onClick</code>，<code>onLongClick</code> 方法就不会被调用了。因为<code>onClick()</code>and <code>onLongClick（）</code>是在view的<code>onTouchevent()</code>方法中调用的。<br>
+如果<code>onTouchListener</code>的<code>onTouch()</code>返回false的话。才会调用view的<code>onTouchEvent(event)</code>方法。</p>
+<pre><code>	public boolean onTouchEvent(MotionEvent event) {
+    ...
+    final int action = event.getAction();
+  	// 检查各种 clickable
+    if (((viewFlags &amp; CLICKABLE) == CLICKABLE ||
+            (viewFlags &amp; LONG_CLICKABLE) == LONG_CLICKABLE) ||
+            (viewFlags &amp; CONTEXT_CLICKABLE) == CONTEXT_CLICKABLE) {
+        switch (action) {
+            case MotionEvent.ACTION_UP:
+                ...
+                removeLongPressCallback();  // 移除长按
+                ...
+                performClick();             // 检查单击
+                ...
+                break;
+            case MotionEvent.ACTION_DOWN:
+                ...
+                checkForLongClick(0);       // 检测长按
+                ...
+                break;
+            ...
+        }
+        return true;                        // ◀︎表示事件被消费
+    }
+    return false;
+}
+</code></pre>
+<p>从View的<code>onTouchevent（）</code>方法中可以看出。<br>
+如果view设置了<code>clickable</code>,<code>longClickable</code>，<code>contextClickable</code>属性中的任何一个。<br>
+或者设置了 <code>onClickListener</code>，<code>onLongClickListener</code>，<code>onContextClickListener</code>中的任何一个<br>
+那个该view就会消费事件。不然不消费事件。，</p>
+<p>从<code>dispatchTouchEvent</code> 和<code>onTouchEvent()</code>方法可以看出。</p>
+<p>1	事件的调度顺序为：<br>
+onTouchListener &gt; onTouchEvent &gt; onLongClickListener &gt; onClickListener</p>
+<p>2: 如果View为Disabled。则：<code>OntouchListener</code>里面的方法不会执行。但是会执行<code>OnTouchEvent(event)</code>方法，也就是说即使view是disabled的，依然可以相应onClick事件。</p>
+<p>3： onTouchEvent方法中的ACTION_UP分支中触发onClick方法。并在这里移除长按监听。因为长按不需要处理ACTION_UP事件。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#android-%E7%B3%BB%E7%BB%9F%E7%9A%84%E4%BA%8B%E4%BB%B6%E5%88%86%E5%8F%91%E6%9C%BA%E5%88%B6%E5%88%86%E6%9E%90">Android 系统的事件分发机制分析</a>
+<ul>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://philadelphia.github.io/post/android-zhong-nei-bu-cun-chu-he-wai-bu-cun-chu-fen-xi">
+              <h3 class="post-title">
+                # Android 中内部存储和外部存储分析 #
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      console.log('section.offsetHeight', section.offsetHeight);
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
