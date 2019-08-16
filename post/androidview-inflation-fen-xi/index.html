@@ -1,0 +1,326 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Android:View Inflation 分析 | Gridea</title>
+<meta name="description" content="温故而知新" />
+<link rel="shortcut icon" href="https://github.com/philadelphia/philadelphia.github.io/favicon.ico?v=1565948558445">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://github.com/philadelphia/philadelphia.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://github.com/philadelphia/philadelphia.github.io">
+  <img class="avatar" src="https://github.com/philadelphia/philadelphia.github.io/images/avatar.png?v=1565948558445" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu" target="_blank">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Android:View Inflation 分析
+            </h2>
+            <div class="post-info">
+              <span>
+                2019-08-16
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <p>LayoutInflater 使用说明</p>
+<p>LayoutInflater主要是用于加载布局。<br>
+加载布局的任务通常都是在Activity中调用setContentView()方法来完成的。其实setContentView()方法的内部也是使用LayoutInflater来加载布局的，只不过这部分源码是internal的，不太容易查看到。</p>
+<p>先来看一下LayoutInflater的基本用法吧，它的用法非常简单，首先需要获取到LayoutInflater的实例，有两种方法可以获取到，第一种写法如下：</p>
+<pre><code>LayoutInflater layoutInflater = LayoutInflater.from(context);  
+</code></pre>
+<p>当然，还有另外一种写法也可以完成同样的效果：</p>
+<pre><code>LayoutInflater layoutInflater = (LayoutInflater) context  
+    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);  
+</code></pre>
+<p>其实第一种就是第二种的简单写法，只是Android给我们做了一下封装而已。代码如下：</p>
+<pre><code> public static LayoutInflater from(Context context) {
+    LayoutInflater LayoutInflater =
+            (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+    if (LayoutInflater == null) {
+        throw new AssertionError(&quot;LayoutInflater not found.&quot;);
+    }
+    return LayoutInflater;
+}
+</code></pre>
+<p>得到了LayoutInflater的实例之后就可以调用它的inflate()方法来加载布局了，如下所示：</p>
+<pre><code>layoutInflater.inflate(resourceId, root);  
+</code></pre>
+<p>inflate()方法一般接收两个参数，第一个参数就是要加载的布局资源文件id，第二个参数是指给该布局的外部再嵌套一层父布局，如果不需要就直接传null。这样就成功成功创建了一个布局的实例，之后再将它添加到指定的位置就可以显示出来了。</p>
+<p>其实它是调用一个三个参数的重载方法来实现的。<br>
+代码实现：</p>
+<pre><code>public View inflate(@LayoutRes int resource, @Nullable ViewGroup root) {
+    return inflate(resource, root, root != null);
+}
+</code></pre>
+<p>该三个参数的方法的实现为：</p>
+<p>public View inflate(@LayoutRes int resource, @Nullable ViewGroup root) {<br>
+return inflate(resource, root, root != null);<br>
+}</p>
+<p>也就是说不管你是使用的哪个inflate()方法的重载，最终都会辗转调用到LayoutInflater的如下代码中</p>
+<p>三个参数的方法的实现为：</p>
+<pre><code>public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean attachToRoot) {
+    synchronized (mConstructorArgs) {
+        Trace.traceBegin(Trace.TRACE_TAG_VIEW, &quot;inflate&quot;);
+
+        final Context inflaterContext = mContext;
+        final AttributeSet attrs = Xml.asAttributeSet(parser);
+        Context lastContext = (Context) mConstructorArgs[0];
+        mConstructorArgs[0] = inflaterContext;
+        View result = root;
+
+        try {
+            // Look for the root node.
+            int type;
+            while ((type = parser.next()) != XmlPullParser.START_TAG &amp;&amp;
+                    type != XmlPullParser.END_DOCUMENT) {
+                // Empty
+            }
+
+            if (type != XmlPullParser.START_TAG) {
+                throw new InflateException(parser.getPositionDescription()
+                        + &quot;: No start tag found!&quot;);
+            }
+
+            final String name = parser.getName();
+
+            if (DEBUG) {
+                System.out.println(&quot;**************************&quot;);
+                System.out.println(&quot;Creating root view: &quot;
+                        + name);
+                System.out.println(&quot;**************************&quot;);
+            }
+
+		//如果开始IDE标签名是Merge，则会将布局文件中的view依次加入到root视图中。
+            if (TAG_MERGE.equals(name)) {
+				//如果开始IDE标签名是Merge,如果attachToRoot 为false，会报错
+                if (root == null || !attachToRoot) {
+                    throw new InflateException(&quot;&lt;merge /&gt; can be used only with a valid &quot;
+                            + &quot;ViewGroup root and attachToRoot=true&quot;);
+                }
+
+			//遍历parser。将view依次加入到root中、
+                rInflate(parser, root, inflaterContext, attrs, false);
+            } else {
+				//如果开始标签不是merge。则temp就是该布局的根视图。
+                // Temp is the root view that was found in the xml
+                final View temp = createViewFromTag(root, name, inflaterContext, attrs);
+
+                ViewGroup.LayoutParams params = null;
+
+                if (root != null) {
+                    if (DEBUG) {
+                        System.out.println(&quot;Creating params from root: &quot; +
+                                root);
+                    }
+                    // Create layout params that match root, if supplied
+                    params = root.generateLayoutParams(attrs);
+                    if (!attachToRoot) {
+                        // Set the layout params for temp if we are not
+                        // attaching. (If we are, we use addView, below)
+                        temp.setLayoutParams(params);
+                    }
+                }
+
+                if (DEBUG) {
+                    System.out.println(&quot;-----&gt; start inflating children&quot;);
+                }
+
+                // Inflate all children under temp against its context.
+                rInflateChildren(parser, temp, attrs, true);
+
+                if (DEBUG) {
+                    System.out.println(&quot;-----&gt; done inflating children&quot;);
+                }
+
+                // We are supposed to attach all the views we found (int temp)
+                // to root. Do that now.
+                if (root != null &amp;&amp; attachToRoot) {
+                    root.addView(temp, params);
+                }
+
+                // Decide whether to return the root that was passed in or the
+                // top view found in xml.
+                if (root == null || !attachToRoot) {
+                    result = temp;
+                }
+            }
+
+        } catch (XmlPullParserException e) {
+            final InflateException ie = new InflateException(e.getMessage(), e);
+            ie.setStackTrace(EMPTY_STACK_TRACE);
+            throw ie;
+        } catch (Exception e) {
+            final InflateException ie = new InflateException(parser.getPositionDescription()
+                    + &quot;: &quot; + e.getMessage(), e);
+            ie.setStackTrace(EMPTY_STACK_TRACE);
+            throw ie;
+        } finally {
+            // Don't retain static reference on context.
+            mConstructorArgs[0] = lastContext;
+            mConstructorArgs[1] = null;
+
+            Trace.traceEnd(Trace.TRACE_TAG_VIEW);
+        }
+
+        return result;
+    }
+}
+</code></pre>
+<pre><code>
+	 第二个参数和第三个参数有四种组合情况
+        if(root == null &amp;&amp; ！attachToRoot){
+            返回id里的view本身
+        }
+
+        if(root != null &amp;&amp; attachToRoot){
+            返回root本身，此时root已经将id里的控件添加了。
+        此时如果在使用root.addview(view) 就会报错。view此时已经有parent、因为view本身就是root自己。root自己addview自身会报错
+        }else if (root != null &amp;&amp; !attachToRoot){
+            返回返回id里的view本身，此时id里的控件已经设置了布局参数
+        }
+
+	1. 如果root为null，attachToRoot将失去作用，设置任何值都没有意义。
+	2. 如果root不为null，attachToRoot设为true，则会给加载的布局文件的指定一个父布局，即root。
+	3. 如果root不为null，attachToRoot设为false，则会将布局文件最外层的所有layout属性进行设置，当该view被添加到父view当中时，这些layout属性会自动生效。
+	4. 在不设置attachToRoot参数的情况下，如果root不为null，attachToRoot参数默认为true。
+
+</code></pre>
+<p>Reference:	<a href="http://blog.csdn.net/guolin_blog/article/details/12921889">http://blog.csdn.net/guolin_blog/article/details/12921889</a></p>
+
+              </div>
+              <div class="toc-container">
+                
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://github.com/philadelphia/philadelphia.github.io/post/activity-configuration-changes">
+              <h3 class="post-title">
+                Activity: configuration changes
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://github.com/philadelphia/philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      console.log('section.offsetHeight', section.offsetHeight);
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
