@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-08-16T15:16:49.276Z</updated>
+    <updated>2019-08-16T15:41:47.026Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -892,6 +892,9 @@ observable.subscribe(new Action1&lt;Response&lt;LoginResult&gt;&gt;() {
 <p>但是这样有个问题是我们写接口会特备繁琐，每次都得使用Response&lt;&gt;泛型。一般我们都写作Observable<LoginResult> login();</p>
 <p>其实我们一般情况下也不关注Response信息的。但是不排除特殊情况</p>
 <p>比如这种情况</p>
+<pre><code>[]()
+[]()[]()[]()
+</code></pre>
 <p>https://academy.realm.io/cn/posts/droidcon-jake-wharton-simple-http-retrofit-2/</p>
 <p>这篇文章提到的分页加载的情况，其实这种情况也可以将下一个页面的URL放到Response body里返回。</p>
 <p>这里只是给出了一种情景。</p>
