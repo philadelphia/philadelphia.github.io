@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-08-16T15:06:09.952Z</updated>
+    <updated>2019-08-16T15:06:29.879Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -16,6 +16,401 @@
         <link href="https://philadelphia.github.io/post/rxjava-10">
         </link>
         <updated>2019-08-16T10:07:47.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="function">Function</h2>
+<p>Function 是Action和Func的父接口。</p>
+<pre><code>/**
+ * All Func and Action interfaces extend from this.
+ * &lt;p&gt;
+ * Marker interface to allow instanceof checks.
+ */
+public interface Function {
+
+}
+</code></pre>
+<h2 id="action">Action</h2>
+<pre><code>/**
+ * All Action interfaces extend from this.
+ * &lt;p&gt;
+ * Marker interface to allow instanceof checks.
+ */
+public interface Action extends Function {
+
+}
+</code></pre>
+<p>Action0 是 RxJava 的一个接口，它只有一个方法 call()，这个方法是无参无返回值的；</p>
+<p>Action 接口有以下子接口，<br>
+Action1,Action2------Action9,ActionN</p>
+<pre><code>public interface Action1&lt;T&gt; extends Action {
+	void call(T t);
+}
+
+public interface Action2&lt;T1, T2&gt; extends Action {
+	void call(T1 t1, T2 t2);
+}
+
+public interface ActionN extends Action {
+	void call(Object... args);
+}
+</code></pre>
+<h2 id="func">Func</h2>
+<pre><code>Func接口几次Function接口和Callable接口，并复写Callable接口的call方法。
+Func0接口没有参数，只有返回值，
+Func1有一个参数，
+Func2有两个参数。
+.
+.
+.
+Func9有9个参数，
+以此类推，FuncN有N个参数
+
+
+/**
+ * Represents a function with zero arguments.
+ */
+public interface Func0&lt;R&gt; extends Function, Callable&lt;R&gt; {
+	@Override
+	R call();
+}
+
+/**
+ * Represents a function with one argument.
+ */
+public interface Func1&lt;T, R&gt; extends Function {
+	R call(T t);
+}
+
+/**
+ * A vector-argument action.
+ */
+public interface Func9&lt;T1, T2, T3, T4, T5, T6, T7, T8, T9, R&gt; extends Function {
+	R call(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9);
+}
+</code></pre>
+<p>在创建Observable以后，我们可以通过Observable.subscribe(final Action1&lt;? super T&gt; onNext, final Action1<Throwable> onError, final Action0 onCompleted)</p>
+<p>如果我们只传递onNext，onError和onComplete会使用系统默认的。</p>
+<pre><code>public final Subscription subscribe(final Action1&lt;? super T&gt; onNext) {
+    if (onNext == null) {
+        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
+    }
+
+    Action1&lt;Throwable&gt; onError = InternalObservableUtils.ERROR_NOT_IMPLEMENTED;
+    Action0 onCompleted = Actions.empty();
+    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
+}
+
+ public final Subscription subscribe(final Action1&lt;? super T&gt; onNext, final Action1&lt;Throwable&gt; onError) {
+    if (onNext == null) {
+        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
+    }
+    if (onError == null) {
+        throw new IllegalArgumentException(&quot;onError can not be null&quot;);
+    }
+
+    Action0 onCompleted = Actions.empty();
+    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
+}
+
+public final Subscription subscribe(final Action1&lt;? super T&gt; onNext, final Action1&lt;Throwable&gt; onError, final Action0 onCompleted) {
+    if (onNext == null) {
+        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
+    }
+    if (onError == null) {
+        throw new IllegalArgumentException(&quot;onError can not be null&quot;);
+    }
+    if (onCompleted == null) {
+        throw new IllegalArgumentException(&quot;onComplete can not be null&quot;);
+    }
+
+    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
+}
+</code></pre>
+<p>最终系统会将onNext,onError，onComplete，组合成一个ActionSubscriber，</p>
+<pre><code>new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted)
+/**
+ * A Subscriber that forwards the onXXX method calls to callbacks.
+ * @param &lt;T&gt; the value type
+ */
+	public final class ActionSubscriber&lt;T&gt; extends Subscriber&lt;T&gt; {
+
+    final Action1&lt;? super T&gt; onNext;
+    final Action1&lt;Throwable&gt; onError;
+    final Action0 onCompleted;
+
+    public ActionSubscriber(Action1&lt;? super T&gt; onNext, Action1&lt;Throwable&gt; onError, Action0 onCompleted) {
+        this.onNext = onNext;
+        this.onError = onError;
+        this.onCompleted = onCompleted;
+    }
+
+    @Override
+    public void onNext(T t) {
+        onNext.call(t);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        onError.call(e);
+    }
+
+    @Override
+    public void onCompleted() {
+        onCompleted.call();
+    }
+}
+</code></pre>
+<h2 id="observer">Observer</h2>
+<pre><code>public interface Observer&lt;T&gt; {
+	void onCompleted();
+
+	void onError(Throwable e);
+
+	void onNext(T t);
+</code></pre>
+<p>}</p>
+<h2 id="subscriber">Subscriber</h2>
+<p>Subscriber实现了Subscription接口，复写了其<code>unsubscribe</code>和<code>isUnsubscribed</code>方法。<br>
+在<code>Observer</code>的基础上增加了<code>onStart</code>，<code>request</code>，<code>addToRequested</code>，<code>setProducer</code>方法。</p>
+<pre><code>public abstract class Subscriber&lt;T&gt; implements Observer&lt;T&gt;, Subscription{
+
+    // represents requested not set yet
+    private static final Long NOT_SET = Long.MIN_VALUE;
+
+    private final SubscriptionList subscriptions;
+    private final Subscriber&lt;?&gt; subscriber;
+    /* protected by `this` */
+    private Producer producer;
+    /* protected by `this` */
+    private long requested = NOT_SET; // default to not set
+
+    protected Subscriber() {
+        this(null, false);
+    }
+
+
+    protected Subscriber(Subscriber&lt;?&gt; subscriber) {
+        this(subscriber, true);
+    }
+
+   
+    protected Subscriber(Subscriber&lt;?&gt; subscriber, boolean shareSubscriptions) {
+        this.subscriber = subscriber;
+        this.subscriptions = shareSubscriptions &amp;&amp; subscriber != null ? subscriber.subscriptions : new SubscriptionList();
+    }
+
+
+    public final void add(Subscription s) {
+        subscriptions.add(s);
+    }
+
+    @Override
+    public final void unsubscribe() {
+        subscriptions.unsubscribe();
+    }
+
+
+    @Override
+    public final boolean isUnsubscribed() {
+        return subscriptions.isUnsubscribed();
+    }
+
+    
+    public void onStart() {
+        // do nothing by default
+    }
+    
+    
+    protected final void request(long n) {
+        if (n &lt; 0) {
+            throw new IllegalArgumentException(&quot;number requested cannot be negative: &quot; + n);
+        } 
+        
+        // if producer is set then we will request from it
+        // otherwise we increase the requested count by n
+        Producer producerToRequestFrom = null;
+        synchronized (this) {
+            if (producer != null) {
+                producerToRequestFrom = producer;
+            } else {
+                addToRequested(n);
+                return;
+            }
+        }
+        // after releasing lock (we should not make requests holding a lock)
+        producerToRequestFrom.request(n);
+    }
+
+    private void addToRequested(long n) {
+        if (requested == NOT_SET) {
+            requested = n;
+        } else { 
+            final long total = requested + n;
+            // check if overflow occurred
+            if (total &lt; 0) {
+                requested = Long.MAX_VALUE;
+            } else {
+                requested = total;
+            }
+        }
+    }
+    
+  
+    public void setProducer(Producer p) {
+        long toRequest;
+        boolean passToSubscriber = false;
+        synchronized (this) {
+            toRequest = requested;
+            producer = p;
+            if (subscriber != null) {
+                // middle operator ... we pass through unless a request has been made
+                if (toRequest == NOT_SET) {
+                    // we pass through to the next producer as nothing has been requested
+                    passToSubscriber = true;
+                }
+            }
+        }
+        // do after releasing lock
+        if (passToSubscriber) {
+            subscriber.setProducer(producer);
+        } else {
+            // we execute the request with whatever has been requested (or Long.MAX_VALUE)
+            if (toRequest == NOT_SET) {
+                producer.request(Long.MAX_VALUE);
+            } else {
+                producer.request(toRequest);
+            }
+        }
+    }
+}
+</code></pre>
+<h2 id="observable-与observer建立绑定关系">Observable 与Observer建立绑定关系</h2>
+<p>Observable.create().subscribe(new Observer)</p>
+<pre><code>  public final Subscription subscribe(final Observer&lt;? super T&gt; observer) {
+        if (observer instanceof Subscriber) {
+            return subscribe((Subscriber&lt;? super T&gt;)observer);
+        }
+        return subscribe(new ObserverSubscriber&lt;T&gt;(observer));
+    }
+</code></pre>
+<p>如果传入的直接是一个Subscriber对象的话，直接调用subscribe（Subscriber observer）<br>
+否则调用subsribe(new ObserverSubscriber<T>(observer)),将observer构造成一个ObserverSubscriber对象传入。<br>
+其实两者都是一样的。因为<code>ObserverSubscriber</code> 也是<code>Subscriber</code>的子类。</p>
+<h2 id="observersubscriber">ObserverSubscriber</h2>
+<pre><code>	/**
+	 * Wraps an Observer and forwards the onXXX method calls to it.
+	 * @param &lt;T&gt; the value type
+	 */
+	public final class ObserverSubscriber&lt;T&gt; extends Subscriber&lt;T&gt; {
+    final Observer&lt;? super T&gt; observer;
+
+    public ObserverSubscriber(Observer&lt;? super T&gt; observer) {
+        this.observer = observer;
+    }
+    
+    @Override
+    public void onNext(T t) {
+        observer.onNext(t);
+    }
+    
+    @Override
+    public void onError(Throwable e) {
+        observer.onError(e);
+    }
+    
+    @Override
+    public void onCompleted() {
+        observer.onCompleted();
+    }
+}
+</code></pre>
+<p>该类包裹了一个Observer对象。所有的实现其实是Observer对象来操作的。</p>
+<pre><code>	 public final Subscription subscribe(Subscriber&lt;? super T&gt; subscriber) {
+	        return Observable.subscribe(subscriber, this);
+	    }
+
+
+
+    static &lt;T&gt; Subscription subscribe(Subscriber&lt;? super T&gt; subscriber, Observable&lt;T&gt; observable) {
+     // validate and proceed
+        if (subscriber == null) {
+            throw new IllegalArgumentException(&quot;observer can not be null&quot;);
+        }
+        if (observable.onSubscribe == null) {
+            throw new IllegalStateException(&quot;onSubscribe function can not be null.&quot;);
+            /*
+             * the subscribe function can also be overridden but generally that's not the appropriate approach
+             * so I won't mention that in the exception
+             */
+        }
+        
+        // new Subscriber so onStart it
+		先调用subscriber的onStart方法。
+        subscriber.onStart();
+        
+        /*
+         * See https://github.com/ReactiveX/RxJava/issues/216 for discussion on &quot;Guideline 6.4: Protect calls
+         * to user code from within an Observer&quot;
+         */
+        // if not already wrapped
+        if (!(subscriber instanceof SafeSubscriber)) {
+            // assign to `observer` so we return the protected version
+            subscriber = new SafeSubscriber&lt;T&gt;(subscriber);
+        }
+
+        // The code below is exactly the same an unsafeSubscribe but not used because it would 
+        // add a significant depth to already huge call stacks.
+        try {
+            // allow the hook to intercept and/or decorate
+            hook.onSubscribeStart(observable, observable.onSubscribe).call(subscriber);
+            return hook.onSubscribeReturn(subscriber);
+        } catch (Throwable e) {
+            // special handling for certain Throwable/Error/Exception types
+            Exceptions.throwIfFatal(e);
+            // in case the subscriber can't listen to exceptions anymore
+            if (subscriber.isUnsubscribed()) {
+                RxJavaPluginUtils.handleException(hook.onSubscribeError(e));
+            } else {
+                // if an unhandled error occurs executing the onSubscribe we will propagate it
+                try {
+                    subscriber.onError(hook.onSubscribeError(e));
+                } catch (Throwable e2) {
+                    Exceptions.throwIfFatal(e2);
+                    // if this happens it means the onError itself failed (perhaps an invalid function implementation)
+                    // so we are unable to propagate the error correctly and will just throw
+                    RuntimeException r = new OnErrorFailedException(&quot;Error occurred attempting to subscribe [&quot; + e.getMessage() + &quot;] and then again while trying to pass to onError.&quot;, e2);
+                    // TODO could the hook be the cause of the error in the on error handling.
+                    hook.onSubscribeError(r);
+                    // TODO why aren't we throwing the hook's return value.
+                    throw r;
+                }
+            }
+            return Subscriptions.unsubscribed();
+        }
+    }
+</code></pre>
+<p>该方法返回一个<code>Subscription</code>对象</p>
+<h2 id="subscription">Subscription</h2>
+<pre><code>	public interface Subscription {
+
+    /**
+     * Stops the receipt of notifications on the {@link Subscriber} that was registered when this Subscription
+     * was received.
+     * &lt;p&gt;
+     * This allows unregistering an {@link Subscriber} before it has finished receiving all events (i.e. before
+     * onCompleted is called).
+     */
+    void unsubscribe();
+
+    /**
+     * Indicates whether this {@code Subscription} is currently unsubscribed.
+     *
+     * @return {@code true} if this {@code Subscription} is currently unsubscribed, {@code false} otherwise
+     */
+    boolean isUnsubscribed();
+
+}
+</code></pre>
+<p>该接口有两个方法。</p>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[Retrofit2.0简介]]></title>
@@ -23,6 +418,379 @@
         <link href="https://philadelphia.github.io/post/retrofit20-jian-jie">
         </link>
         <updated>2019-08-16T10:07:18.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="retrofit-20">Retrofit 2.0</h1>
+<h2 id="1定义">1.定义</h2>
+<p>官方的Retrofit主页是这样描述它的</p>
+<blockquote>
+<p>A type-safe HTTP client for Android and Java</p>
+</blockquote>
+<blockquote>
+<p>用于Android和Java的一个类型安全(type-safe)的REST客户端</p>
+</blockquote>
+<p>你可以使用注解去描述HTTP请求，同时Retrofit默认集成URL参数替换和查询参数.除此之外它还支持 Multipart请求和文件上传。</p>
+<h2 id="2使用">2.使用</h2>
+<p>注意这个任务是网络任务，不要忘记给程序加入网络权限</p>
+<pre><code>&lt;uses-permission android:name=&quot;android.permission.INTERNET&quot; /&gt;
+</code></pre>
+<p>build.gradle</p>
+<pre><code>dependencies { 
+ // Retrofit &amp;amp; OkHttp
+compile 'com.squareup.retrofit:retrofit:2.0.0-beta2'
+}
+</code></pre>
+<p><code>Retrofit</code> 需要最低<code>JDK 1.7</code> 和 <code>Android 2.3</code>.</p>
+<p>retfofit 使用注解的方式定义API</p>
+<p>方法类型有：</p>
+<blockquote>
+<p>GET, POST, PUT, DELETE, HEAD</p>
+</blockquote>
+<p>1	声明API</p>
+<pre><code>public interface GitHubService {
+  @GET(&quot;users/{user}/repos&quot;)
+  Call&lt;List&lt;Repo&gt;&gt; listRepos(@Path(&quot;user&quot;) String user);
+}
+</code></pre>
+<p>2	初始化Retrofit</p>
+<pre><code>Retrofit retrofit = new Retrofit.Builder()
+.baseUrl(&quot;https://api.github.com/&quot;)
+.build();
+
+GitHubService service = retrofit.create(GitHubService.class);
+Call&lt;List&lt;Repo&gt;&gt; repos = service.listRepos(&quot;octocat&quot;);    
+</code></pre>
+<p>3	发起请求：</p>
+<p>//同步请求</p>
+<pre><code>try {
+  Response&lt;List&lt;Repo&gt;&gt; bodyResponse = call.execute();
+  String body = bodyResponse.body().string();//获取返回体的字符串
+  Log.i(&quot;wxl&quot;, &quot;body=&quot; + body);
+  } catch (IOException e) {
+  e.printStackTrace();
+  }
+</code></pre>
+<p>//异步请求</p>
+<pre><code>call.enqueue(new Callback&lt;List&lt;Repo&gt;&gt;() {
+            @Override
+            public void onResponse(Response&lt;List&lt;Repo&gt;&gt; response) {
+                try {
+                    Log.i(&quot;wxl&quot;, &quot;response=&quot; + response.body().string());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override
+            public void onFailure(Throwable t) {
+                Log.i(&quot;wxl&quot;, &quot;onFailure=&quot; + t.getMessage());
+            }
+        });
+</code></pre>
+<p>4 取消请求</p>
+<pre><code>call.cancel();
+</code></pre>
+<p>所有的请求方法都是按照上述类型执行。<br>
+在方法声明时注解@GET，@POST,@PUT 分别对应方法的类型。</p>
+<p>接口参数</p>
+<blockquote>
+<p>Path</p>
+</blockquote>
+<p>ApiStores</p>
+<pre><code> /**
+ * Call&lt;T&gt; get();必须是这种形式,这是2.0之后的新形式
+ * 如果不需要转换成Json数据,可以用了ResponseBody;
+ * 你也可以使用Call&lt;GsonBean&gt; get();这样的话,需要添加Gson转换器
+ */
+public interface ApiStores {
+    @GET(&quot;adat/sk/{cityId}.html&quot;)
+    Call&lt;ResponseBody&gt; getWeather(@Path(&quot;cityId&quot;) String cityId);
+}
+</code></pre>
+<blockquote>
+<p>Query</p>
+</blockquote>
+<p>如果链接是http://ip.taobao.com/service/getIpInfo.php?ip=202.202.33.33</p>
+<p>ApiStores</p>
+<pre><code>public interface ApiStores {
+	@GET(&quot;http://ip.taobao.com/service/getIpInfo.php&quot;)
+	Call&lt;ResponseBody&gt; getWeather(@Query(&quot;ip&quot;) String ip);
+</code></pre>
+<p>复杂的查询参数也可以使用Map。</p>
+<pre><code>@GET(&quot;group/{id}/users&quot;)
+Call&lt;List&lt;User&gt;&gt; groupList(@Path(&quot;id&quot;) int groupId, @QueryMap Map&lt;String, String&gt; options);
+</code></pre>
+<blockquote>
+<p>Headers</p>
+</blockquote>
+<p>你可以通过@Headers参数来设置静态headers</p>
+<pre><code>@Headers(&quot;Cache-Control: max-age=640000&quot;)
+@GET(&quot;widget/list&quot;)
+Call&lt;List&lt;Widget&gt;&gt; widgetList();
+
+@Headers({
+    &quot;Accept: application/vnd.github.v3.full+json&quot;,
+    &quot;User-Agent: Retrofit-Sample-App&quot;
+})
+@GET(&quot;users/{username}&quot;)
+Call&lt;User&gt; getUser(@Path(&quot;username&quot;) String username);
+</code></pre>
+<p><code>Headers</code>不复写其他的<code>Headers</code>值。所有同名的的<code>Headers</code>参数都将包含在该请求中。<br>
+Request的Header可以通过使用<code>@Header</code>注解动态更新。必须给<code>@Header</code>提供一个相应的参数。如果该值为空，该<code>Header</code>就被忽略了。不然就会调用value的<code>toString()</code>方法获得value的值。</p>
+<pre><code>@GET(&quot;user&quot;)
+Call&lt;User&gt; getUser(@Header(&quot;Authorization&quot;) String authorization)
+</code></pre>
+<p>每一个request都有的header可以通过设置<code>OkHttp interceptor</code>来统一添加。</p>
+<blockquote>
+<p>Body</p>
+</blockquote>
+<p>这是针对POST方式，如果参数是json格式，如：</p>
+<pre><code>{		
+    &quot;apiInfo&quot;: {		
+        &quot;apiName&quot;: &quot;WuXiaolong&quot;,		
+        &quot;apiKey&quot;: &quot;666&quot;		
+    }		
+}
+</code></pre>
+<p>ApiStores</p>
+<pre><code>public interface ApiStores {
+    @POST(&quot;client/shipper/getCarType&quot;)
+    Call&lt;ResponseBody&gt; getCarType(@Body ApiInfo apiInfo);
+   }
+</code></pre>
+<p>这个<code>Object</code>将被<code>Retrofit</code>对象所指定的<code>Converter</code>所转换，如果没有指定转换器，只能使用<code>RequestBody</code>来定义参数。</p>
+<p>建立Bean</p>
+<pre><code>public class ApiInfo {
+       private ApiInfoBean apiInfo;
+       public ApiInfoBean getApiInfo() {
+           return apiInfo;
+       }
+       public void setApiInfo(ApiInfoBean apiInfo) {
+           this.apiInfo = apiInfo;
+       }
+       public class ApiInfoBean {
+           private String apiName;
+           private String apiKey;
+           //省略get和set方法
+       }
+   }
+</code></pre>
+<p>代码调用</p>
+<pre><code>private void getCarType() {
+   mRetrofit = new Retrofit.Builder()
+           .baseUrl(&quot;http://WuXiaolong.me/&quot;)
+           .addConverterFactory(GsonConverterFactory.create())
+           .build();
+   ApiStores apiStores = mRetrofit.create(ApiStores.class);
+   ApiInfo apiInfo = new ApiInfo();
+   ApiInfo.ApiInfoBean apiInfoBean = apiInfo.new ApiInfoBean();
+   apiInfoBean.setApiKey(&quot;666&quot;);
+   apiInfoBean.setApiName(&quot;WuXiaolong&quot;);
+   apiInfo.setApiInfo(apiInfoBean);
+   Call&lt;ResponseBody&gt; call = apiStores.getCarType(apiInfo);
+   call.enqueue(new Callback&lt;ResponseBody&gt;() {
+       @Override
+       public void onResponse(Response&lt;ResponseBody&gt; response) {
+           String body = null;//获取返回体的字符串
+           try {
+               body = response.body().string();
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+           Log.i(&quot;wxl&quot;, &quot;get=&quot; + body);
+       }
+       @Override
+       public void onFailure( Throwable t) {
+       }
+   });
+   }
+</code></pre>
+<blockquote>
+<p>Url encode</p>
+</blockquote>
+<p>POST or PUT Url encode 過的表單資料，用@FormUrlEncoded，使用@Field個別指定</p>
+<pre><code>@POST(&quot;/articles/{article_id}/comments&quot;)
+@FormUrlEncoded
+Comment create(
+@Path(&quot;article_id&quot;) int articleId,
+@Field(&quot;rating&quot;) int rating,
+@Field(&quot;content&quot;) String content
+);
+</code></pre>
+<p>POST or PUT Url encode 過的表單資料，用@FormUrlEncoded，參數也可用@Body傳</p>
+<pre><code>@POST(&quot;/articles/{article_id}/comments&quot;)
+@FormUrlEncoded
+Comment create(
+    @Path(&quot;article_id&quot;) int articleId,
+    @Body Comment comment
+);
+</code></pre>
+<blockquote>
+<p>POST or PUT 用@Multipart來上傳檔案</p>
+</blockquote>
+<pre><code>@PUT(&quot;/me&quot;)
+@Multipart
+Me update(
+    @Part(&quot;display_name&quot;) String displayName,
+    @Part(&quot;avatar&quot;) TypedFile avatar
+);
+</code></pre>
+<p>更详细的信息，请点击：<a href="http://www.chenkaihua.com/2016/04/02/retrofit2-upload-multipart-files/">http://www.chenkaihua.com/2016/04/02/retrofit2-upload-multipart-files/</a></p>
+<p>更多更有效的 Converters</p>
+<blockquote>
+<p>默认情况下，<code>Retrofit</code> 只能反序列化<code>HTTP</code> body到<code>OKHTTP</code>的<code>ResponseBody</code>类型。并且<code>OKHTTP</code>只接受<code>Retrifit</code> <code>@Body</code>类型的<code>RequestBody</code><br>
+可以添加<code>Converter</code>转换器来支持其他的类型，6个相似的兼容流行的序列化库模块可以供使用。</p>
+</blockquote>
+<pre><code>Gson: com.squareup.retrofit2:converter-gson
+Jackson: com.squareup.retrofit2:converter-jackson	
+Moshi: com.squareup.retrofit2:converter-moshi
+Protobuf: com.squareup.retrofit2:converter-protobuf
+Wire: com.squareup.retrofit2:converter-wire
+Simple XML: com.squareup.retrofit2:converter-simplexml	
+Scalars (primitives, boxed, and String): com.squareup.retrofit2:converter-scalars
+</code></pre>
+<p>例子:</p>
+<pre><code>interface which uses Gson for its deserialization.
+
+Retrofit retrofit = new Retrofit.Builder()
+    .baseUrl(&quot;https://api.github.com&quot;)
+    .addConverterFactory(GsonConverterFactory.create())
+    .build();
+
+GitHubService service = retrofit.create(GitHubService.class);
+</code></pre>
+<blockquote>
+<p>Retrofit 1 里有一个 converter 的问题。多数人可能没遇到过，是库内部的一个问题。在 Retrofit 2 里，已经解决了这个问题，同时开始支持多种 Converter 并存。</p>
+</blockquote>
+<blockquote>
+<p>在之前，如果你遇到这种情况：一个 API 请求返回的结果需要通过 JSON 反序列化，另一个 API 请求需要通过 proto 反序列化，唯一的解决方&gt;案就是将两个接口分离开声明。</p>
+</blockquote>
+<pre><code>interface SomeProtoService {
+  @GET(&quot;/some/proto/endpoint&quot;)
+  Call&lt;SomeProtoResponse&gt; someProtoEndpoint();
+}
+
+interface SomeJsonService {
+  @GET(&quot;/some/json/endpoint&quot;)
+  Call&lt;SomeJsonResponse&gt; someJsonEndpoint();
+</code></pre>
+<blockquote>
+<p>之所以搞得这么麻烦是因为一个 REST adapter 只能绑定一个 Converter 对象。我们费工夫去解决这个是因为：接口的声明是要语意化的。API 接口应该通过功能实现分组，比如： account 的接口，user 的接口，或者 Twitter 相关的接口。返回格式的差异不应该成为你分组时候的阻碍。</p>
+</blockquote>
+<blockquote>
+<p>现在，你可以把他们都放在一起了：</p>
+</blockquote>
+<pre><code>interface SomeService {
+  @GET(&quot;/some/proto/endpoint&quot;)
+  Call&lt;SomeProtoResponse&gt; someProtoEndpoint();
+
+  @GET(&quot;/some/json/endpoint&quot;)
+  Call&lt;SomeJsonResponse&gt; someJsonEndpoint();
+}
+</code></pre>
+<blockquote>
+<p>SomeProtoResponse —&gt; Proto? Yes!</p>
+</blockquote>
+<blockquote>
+<p>原理很简单，其实就是对着每一个 converter 询问他们是否能够处理某种类型。我们问 proto 的 converter： “Hi, 你能处理 SomeProtoResponse 吗？”，然后它尽可能的去判断它是否可以处理这种类型。我们都知道：Protobuff 都是从一个名叫 message 或者 message lite 的类继承而来。所以，判断方法通常就是检查这个类是否继承自 message。<br>
+在面对 JSON 类型的时候，首先问 proto converter，proto converter 会发现这个不是继承子 Message 的，然后回复 no。紧接着移到下一个 JSON converter 上。JSON Converter 会回复说我可以！</p>
+</blockquote>
+<blockquote>
+<p>SomeJsonResponse —&gt; Proto? No! —&gt; JSON? Yes!</p>
+</blockquote>
+<blockquote>
+<p>因为 JSON 并没有什么继承上的约束。所以我们无法通过什么确切的条件来判断一个对象是否是 JSON 对象。以至于 JSON 的 converters 会对任何数据都回复说：我可以处理！这个一定要记住， JSON converter 一定要放在最后，不然会和你的预期不符。</p>
+<p>另一个要注意的是，现在已经不提供默认的 converter 了。如果不显性的声明一个可用的 Converter 的话，Retrofit 是会报错的：提醒你没有可用的 Converter。因为核心代码已经不依赖序列化相关的第三方库了，我们依然提供对 Converter 的支持，不过你需要自己引入这些依赖，同时显性的声明 Retrofit 需要用的 Converter 有哪些。<br>
+添加 converter 的顺序很重要。按照这个顺序，我们将依次询问每一个 converter 能否处理一个类型。我上面写的其实是错的。如果我们试图反序列化一个 proto 格式，它其实会被当做 JSON 来对待。这显然不是我们想要的。我们需要调整下顺序，因为我们先要检查 proto buffer 格式，然后才是 JSON。</p>
+</blockquote>
+<pre><code>Retrofit retrofit = new Retrofit.Builder()
+.baseUrl(&quot;https://api.github.com&quot;)
+.addConverterFactory(ProtoConverterFactory.create())
+.addConverterFactory(GsonConverterFactory.create())
+.build();
+</code></pre>
+<blockquote>
+<p>由于现在Retrofit开始依赖 OkHttp， 并没有 Http Client 层的抽象。现在是可以传递一个配置好的 OkHttp 实例的。比如：配置 interceptors, 或者一个 SSL socket 工厂类， 或者 timeouts 的具体数值。 （OkHttp 有默认的超时机制，如果你不需要自定义，实际上不&gt;必进行任何设置，但是如果你想要去设置它们，下面是一个例子告诉你来怎么操作。）</p>
+</blockquote>
+<pre><code> OkHttpClient client = new OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)			//失败后是否重试
+            .connectTimeout(15, TimeUnit.SECONDS)	//设置连接超时时间
+            .addInterceptor(getHttpInterceptor())	//设置应用拦截器
+            .build();
+
+Retrofit retrofit = new Retrofit.Builder()
+    .baseUrl(&quot;https://api.github.com&quot;)	//设置BaseURL
+    .client(client)						//设置client
+    .build();
+</code></pre>
+<h2 id="3-interceptor">3 Interceptor</h2>
+<blockquote>
+<p>在使用Android retrofit+rxjava时，想获知网络请求的一些参数，方便调试，比如：请求地址、请求响应时间、请求响应消息体等内容，虽然部分可以通过每个接口进行获知，但是这样极其不方便，可以使用拦截器来做统一的操作。</p>
+</blockquote>
+<p>添加拦截器：<br>
+可以针对OkHttpClient.Builder 添加拦截器</p>
+<pre><code>HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);	//设置日志级别
+
+OkHttpClient client = new OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)			//失败后是否重试
+            .connectTimeout(15, TimeUnit.SECONDS)	//设置连接超时时间
+            .addInterceptor(interceptor)	//设置应用拦截器
+            .build();
+</code></pre>
+<h2 id="4cache">4.Cache</h2>
+<blockquote>
+<p>开启OKHttp缓存：</p>
+</blockquote>
+<p>先获取系统外部存储的路径，”xxx”可以自己命名，缓存文件就存在 Android/data/&lt;包名&gt;/cache/resposes。</p>
+<pre><code>File httpCacheDirectory = new File(UIUtils.getContext().getExternalCacheDir(), &quot;xxx&quot;); 
+client.setCache(new Cache(httpCacheDirectory,10 * 1024 * 1024));
+</code></pre>
+<h2 id="5proguard">5.Proguard</h2>
+<blockquote>
+<p>如果你在你的代码里使用代码混淆机制,请在你的配置里添加下面几行.</p>
+</blockquote>
+<pre><code># Platform calls Class.forName on types which do not exist on Android to determine platform.
+-dontnote retrofit2.Platform
+# Platform used when running on RoboVM on iOS. Will not be used at runtime.
+-dontnote retrofit2.Platform$IOS$MainThreadExecutor
+# Platform used when running on Java 8 VMs. Will not be used at runtime.
+-dontwarn retrofit2.Platform$Java8
+# Retain generic type information for use by reflection by converters and adapters.
+-keepattributes Signature
+# Retain declared checked exceptions for use by a Proxy instance.
+-keepattributes Exceptions
+</code></pre>
+<h2 id="6-nitoice">6 Nitoice</h2>
+<blockquote>
+<p>Retrofit 在请求失败时依然会回调 <code>onResponse()</code>方法。及时response code不是200依然会回调一下方法，需要注意。</p>
+</blockquote>
+<pre><code> public void onResponse(Call&lt;LoginResult&gt; call, Response&lt;LoginResult&gt; response) {
+	 
+}
+</code></pre>
+<h2 id="7references">7:References</h2>
+<ol>
+<li>
+<p>Retrofit github主页：<a href="https://square.github.io/retrofit/" title="retrofit github 主页">https://square.github.io/retrofit/</a></p>
+</li>
+<li>
+<p>Interceptor wiki:	<a href="https://github.com/square/okhttp/wiki/Interceptors" title="retrofit interceptor">https://github.com/square/okhttp/wiki/Interceptors</a></p>
+</li>
+<li>
+<p>用 Retrofit 2 简化 HTTP 请求	<a href="https://realm.io/cn/news/droidcon-jake-wharton-simple-http-retrofit-2/"> https://realm.io/cn/news/droidcon-jake-wharton-simple-http-retrofit-2/</a></p>
+</li>
+<li>
+<p>Http Caching:		<a href="https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=zh-cn" title="Http Cache">https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=zh-cn</a></p>
+</li>
+<li>
+<p>四种常见的 POST 提交数据方式		<a href="https://imququ.com/post/four-ways-to-post-data-in-http.html" title="四种常见的 POST 提交数据方式">https://imququ.com/post/four-ways-to-post-data-in-http.html</a></p>
+</li>
+<li>
+<p>Blog				 <a href="http://wuxiaolong.me/2016/01/15/retrofit/" title="Blog"> http://wuxiaolong.me/2016/01/15/retrofit/</a></p>
+</li>
+<li>
+<p>URL wikipedia: 		<a href="https://zh.wikipedia.org/wiki/%E7%BB%9F%E4%B8%80%E8%B5%84%E6%BA%90%E5%AE%9A%E4%BD%8D%E7%AC%A6" title="URL wikipedia: ">https://zh.wikipedia.org/wiki/%E7%BB%9F%E4%B8%80%E8%B5%84%E6%BA%90%E5%AE%9A%E4%BD%8D%E7%AC%A6</a></p>
+</li>
+</ol>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[Retrofit: 几种ApiService接口定义的区别]]></title>
@@ -30,6 +798,150 @@
         <link href="https://philadelphia.github.io/post/retrofit-ji-chong-apiservice-jie-kou-ding-yi-de-qu-bie">
         </link>
         <updated>2019-08-16T10:06:42.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="retrofit声明-apiservice接口">Retrofit:声明 ApiService接口</h1>
+<p>我们在使用Retrofit的时候只需要把URL通过注解的形式写到APIService文件中就行了。</p>
+<p>比如登录功能：</p>
+<p>如果后台的成功返回格式为</p>
+<pre><code>{	
+	code:0;
+	Message:&quot;login success&quot;
+}
+</code></pre>
+<p>失败的返回格式为</p>
+<pre><code>{	
+	code:-1;
+	Message:&quot;login failed&quot;
+}
+</code></pre>
+<p>我们定义个一个Bean类LoginResult.</p>
+<pre><code>public class LoginResult{
+	private int code;
+	private String message;
+	
+	//get/set
+}
+
+
+</code></pre>
+<h2 id="不使用rxjava">不使用Rxjava</h2>
+<p>在方法的定义中，如果不适用Rxjava的话，</p>
+<pre><code>@Post
+@FormUrlEncoded
+Call&lt;LogInResult&gt; login(@Field(&quot;userName&quot;) String userName, @Field(&quot;password&quot;)String password);
+</code></pre>
+<p>在使用的时候们只需要使用apiService.login(&quot;dsf&quot;, &quot;dsf&quot;),就好了。该方法会返回一个Call<LoginResult> 对象</p>
+<p>我们只需要或者异步执行</p>
+<pre><code>//同步执行
+Response&lt;LoginResult&gt; response = call.execute();
+//异步调用
+call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+            }
+        });
+</code></pre>
+<p>然后我们在返回结果里面操作就行了，如果我们需要Response里面的元数据，比如header里面的信息的话，直接从Response取就好了。</p>
+<p>因为Retrofit 使用DefaultCallAdapterFactory默认将OKHttp返回的Call对象(OkHttp对象)转换成了Retrofit的Call<T>对象了</p>
+<h2 id="使用rxajva">使用Rxajva</h2>
+<h3 id="observablet">Observable<T></h3>
+<p>但是我们在使用RxJava后，有时可能会这样声明接口</p>
+<pre><code>@Post
+@FormUrlEncoded
+Observable&lt;LogInResult&gt; login(@Field(&quot;userName&quot;) String userName, @Field(&quot;password&quot;)String password);
+</code></pre>
+<p>这样定义可以很方便的在返回中直接subScribe一个Action对象了</p>
+<pre><code>Observable&lt;LoginResult&gt; observable = model.login(&quot;dfs&quot;, &quot;dfs&quot;);
+observable.subscribe(new Action1&lt;LoginResult&gt;() {
+            @Override
+            public void call(LoginResult loginResult) {
+								if (loginResult.getCode() == 0) {
+                    //登录成功   
+                } else {
+                    //登录失败
+                }
+					
+            }
+        });
+</code></pre>
+<p>但是这样有一个问题就是会丢失Response的元数据，因为Response对象我们是没法访问的。因为Retrofit已经帮助我们做了转换，直接把我们接口方法里定义的数据类型转换好后返回给我们了。去掉了Response信息。</p>
+<h3 id="observableresponset">Observable&lt;Response<T>&gt;</h3>
+<p>我们可以这么定义接口</p>
+<pre><code>@Post
+@FormUrlEncoded
+Observable&lt;Response&lt;LogInResult&gt;&gt; login(@Field(&quot;userName&quot;) String userName, @Field(&quot;password&quot;)String password);
+</code></pre>
+<p>这样我们就得到这样的返回结果。</p>
+<pre><code class="language-java">Observable&lt;Response&lt;LoginResult&gt;&gt; observable = model.login(&quot;dfs&quot;, &quot;dfs&quot;);
+observable.subscribe(new Action1&lt;Response&lt;LoginResult&gt;&gt;() {
+            @Override
+            public void call(Response&lt;LoginResult&gt; loginResultResponse) {
+                if (loginResultResponse.code() == 200){
+                    LoginResult body = loginResultResponse.body();
+                }else {
+                    //登录失败
+                }
+            }
+        });
+</code></pre>
+<p>这样就能拿到Response信息了，然后根据Response code判断是否登录成功了。</p>
+<p>但是这样有个问题是我们写接口会特备繁琐，每次都得使用Response&lt;&gt;泛型。一般我们都写作Observable<LoginResult> login();</p>
+<p>其实我们一般情况下也不关注Response信息的。但是不排除特殊情况</p>
+<p>比如这种情况</p>
+<p>https://academy.realm.io/cn/posts/droidcon-jake-wharton-simple-http-retrofit-2/</p>
+<p>这篇文章提到的分页加载的情况，其实这种情况也可以将下一个页面的URL放到Response body里返回。</p>
+<p>这里只是给出了一种情景。</p>
+<p>现实中解决方案很多种，只能折中了，其实我们没必要使用Response的Response code 来判断接口是否调用成功了。因为Retrofit都帮我们做过了。所以我们定义接口的时候只要使用Observable<Response>就好了。</p>
+<p>我们在使用Retrofit + Rxjava 的时候一般都这么生成Retrofit client的</p>
+<pre><code> Retrofit retrofit = new Retrofit.Builder()
+                .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                .baseUrl(baseUrl)
+                .build();
+</code></pre>
+<p>这里RxJavaCallAdapterFactory生成的CallAdapter对象就帮我们做好了结果的转换</p>
+<p>我们看一下RxJavaCallAdapterFactory的声明。</p>
+<pre><code>/**
+ * A {@linkplain CallAdapter.Factory call adapter} which uses RxJava for creating observables.
+ * &lt;p&gt;
+ * Adding this class to {@link Retrofit} allows you to return {@link Observable} from service
+ * methods.
+ * &lt;pre&gt;&lt;code&gt;
+ * interface MyService {
+ *   &amp;#64;GET(&quot;user/me&quot;)
+ *   Observable&amp;lt;User&amp;gt; getUser()
+ * }
+ * &lt;/code&gt;&lt;/pre&gt;
+ * There are three configurations supported for the {@code Observable} type parameter:
+ 有三种配置支持Observable的类型参数
+ * &lt;ul&gt;
+ * &lt;li&gt;Direct body (e.g., {@code Observable&lt;User&gt;}) calls {@code onNext} with the deserialized body
+ * for 2XX responses and calls {@code onError} with {@link HttpException} for non-2XX responses and
+ * {@link IOException} for network errors.&lt;/li&gt;
+ 第一种：直接使用Observable&lt;T&gt;声明接口, 将会针对所有的2** Response code会调用onNext(T t)方法。所有的Response code 不是200的都调用OnError(Throwable t)方法抛出一个HttpException 异常，网络错误调用onError()方法，并抛出一个IO异常。
+ 
+ * &lt;li&gt;Response wrapped body (e.g., {@code Observable&lt;Response&lt;User&gt;&gt;}) calls {@code onNext}
+ * with a {@link Response} object for all HTTP responses and calls {@code onError} with
+ * {@link IOException} for network errors&lt;/li&gt;
+ //第二种:如果使用Observable&lt;Response&lt;T&gt;&gt;声明接口，那么针对所有的Response将会调用onNext(Respones&lt;T&gt; response)方法，针对网络异常将调用OnError()方法，并抛出一个IO异常。
+ * &lt;li&gt;Result wrapped body (e.g., {@code Observable&lt;Result&lt;User&gt;&gt;}) calls {@code onNext} with a
+ * {@link Result} object for all HTTP responses and errors.&lt;/li&gt;
+ //第三种：如果使用Observable&lt;Result&lt;T&gt;声明接口。所有的Response和Error将会调用onNext方法。
+ 注意：这个Result是Retrofit提供的。
+ * &lt;/ul&gt;
+ */
+ 
+</code></pre>
+<h2 id="结论">结论</h2>
+<p>结论就是，如果我们没有对Response有特殊的需求的话，直接在接口声明处直接声明成Observable<T>是最方便最直观的。</p>
+<p>这篇文章本应该和Retofit源码分析一起写的，奈何Retrofit的源码实在是太晦涩难懂了</p>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[Retrofit 源码分析]]></title>
@@ -37,6 +949,1482 @@
         <link href="https://philadelphia.github.io/post/retrofit-yuan-ma-fen-xi">
         </link>
         <updated>2019-08-16T10:06:10.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="简介">简介</h1>
+<p>retrofit是square出品的一个优秀的网络框架，注意，不是一个网络引擎。它的定位和Volley是一样的。</p>
+<p>它完成了封装请求，线程切换，数据装换等一系列工作，如果自己有能力也可以封装一个这种框架，本质上是没有区别的。</p>
+<p>retrofit使用的网络引擎是OkHttp.</p>
+<p>而OKHttp和HTTPClient，HttpUrlConnection是一个级别的。</p>
+<p>#使用</p>
+<pre><code class="language-java">//1 创建网络请求接口类
+public interface GitHubService {
+  @GET(&quot;users/{user}/repos&quot;)
+  Call&lt;List&lt;Repo&gt;&gt; listRepos(@Path(&quot;user&quot;) String user);
+}
+
+//2 创建Retrofit实例对象
+Retrofit retrofit = new Retrofit.Builder()
+    .baseUrl(&quot;https://api.github.com/&quot;)
+     .addConverterFactory(GsonConverterFactory.create())
+     .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+    .build();
+
+//3 通过动态代理创建网络接口代理对象
+GitHubService service = retrofit.create(GitHubService.class);
+
+//4 获取Call对象
+Call&lt;List&lt;Repo&gt;&gt; repos = service.listRepos(&quot;octocat&quot;);
+
+//5	执行同步请求或异步请求
+repos.execute();
+repos.enqueue(callback)
+</code></pre>
+<h1 id="retrofit">Retrofit</h1>
+<p>Retrofit也是使用Build模式创建的。</p>
+<p>![屏幕快照 2019-01-11 下午3.12.35](/Users/meiliwu/Desktop/屏幕快照 2019-01-11 下午3.12.35.png)</p>
+<p>builder类有这些方法。从图表可以看出，我们可以调用client方法传入一个我们自定义的OkhttpClient,</p>
+<p>调用baseUrl方法传入Host,最后调动build方法生成一个Retrofit 对象</p>
+<pre><code class="language-java">public Retrofit build() {
+    //baseUrl是必须的
+  if (baseUrl == null) {
+    throw new IllegalStateException(&quot;Base URL required.&quot;);
+  }
+
+   //如果没有设置callFactory对象，系统自动生成一个OkhttpClient对象.因为OKHttpclient实现了			Call.Factory接口
+   // public class OkHttpClient implements Cloneable, Call.Factory, WebSocket.Factory
+  okhttp3.Call.Factory callFactory = this.callFactory;
+  if (callFactory == null) {
+    callFactory = new OkHttpClient();
+  }
+
+  //如果没有设置callbackExecutor，系统自动生成一个，platform.defaultCallbackExecutor，这个platform是无参构造方法里调用Platform.get()方法得到的。
+    /** 
+    public Builder() {
+      this(Platform.get());
+    }**/
+    
+  Executor callbackExecutor = this.callbackExecutor;
+  if (callbackExecutor == null) {
+    callbackExecutor = platform.defaultCallbackExecutor();
+  }
+
+  // Make a defensive copy of the adapters and add the default Call adapter.
+  List&lt;CallAdapter.Factory&gt; adapterFactories = new ArrayList&lt;&gt;(this.adapterFactories);
+  adapterFactories.add(platform.defaultCallAdapterFactory(callbackExecutor));
+
+  // Make a defensive copy of the converters.
+  List&lt;Converter.Factory&gt; converterFactories = new ArrayList&lt;&gt;(this.converterFactories);
+
+  return new Retrofit(callFactory, baseUrl, converterFactories, adapterFactories,
+      callbackExecutor, validateEagerly);
+}
+</code></pre>
+<h1 id="platform">Platform</h1>
+<pre><code class="language-java">class Platform {
+  private static final Platform PLATFORM = findPlatform();
+
+  static Platform get() {
+    return PLATFORM;
+  }
+
+  private static Platform findPlatform() {
+    try {
+      Class.forName(&quot;android.os.Build&quot;);
+      if (Build.VERSION.SDK_INT != 0) {
+        return new Android();
+      }
+    } catch (ClassNotFoundException ignored) {
+    }
+    try {
+      Class.forName(&quot;java.util.Optional&quot;);
+      return new Java8();
+    } catch (ClassNotFoundException ignored) {
+    }
+    try {
+        //怎么还有IOS代码呢？
+      Class.forName(&quot;org.robovm.apple.foundation.NSObject&quot;);
+      return new IOS();
+    } catch (ClassNotFoundException ignored) {
+    }
+    return new Platform();
+  }
+
+  Executor defaultCallbackExecutor() {
+    return null;
+  }
+
+  CallAdapter.Factory defaultCallAdapterFactory(Executor callbackExecutor) {
+    if (callbackExecutor != null) {
+      return new ExecutorCallAdapterFactory(callbackExecutor);
+    }
+    return DefaultCallAdapterFactory.INSTANCE;
+  }
+
+  boolean isDefaultMethod(Method method) {
+    return false;
+  }
+
+  Object invokeDefaultMethod(Method method, Class&lt;?&gt; declaringClass, Object object, Object... args)
+      throws Throwable {
+    throw new UnsupportedOperationException();
+  }
+
+  static class Android extends Platform {
+    @Override public Executor defaultCallbackExecutor() {
+      return new MainThreadExecutor();
+    }
+
+    @Override CallAdapter.Factory defaultCallAdapterFactory(Executor callbackExecutor) {
+      return new ExecutorCallAdapterFactory(callbackExecutor);
+    }
+
+    static class MainThreadExecutor implements Executor {
+      private final Handler handler = new Handler(Looper.getMainLooper());
+
+      @Override public void execute(Runnable r) {
+        handler.post(r);
+      }
+    }
+  }
+}
+</code></pre>
+<p>Retrofit 要求必须将请求API写到一个interface接口文件里，这是动态代理特性要求的。</p>
+<p>从接口文件里我们可以看到，我们将每个请求用这种形式表达</p>
+<pre><code class="language-Java">public interface GitHubService {
+	@GET(&quot;users/{user}/repos&quot;)
+	Call&lt;List&lt;Repo&gt;&gt; listRepos(@Path(&quot;user&quot;) String user);
+}		
+
+</code></pre>
+<p>从接口文件我们可以看出，一个请求接口被各种注解所表示。</p>
+<p>我们知道一个方法有一下关键字段组成</p>
+<p>首先一个方法必须有描述符，返回值，方法名，参数类型，参数构成。</p>
+<p>那我们用一个方法表示一个http请求需要哪些东西呢？</p>
+<p>Http请求，首先我们得知道是GET请求还是POST请求，</p>
+<p>然后就是请求头信息，请求路径，查询参数等等。</p>
+<p>POST请求还需要Body。</p>
+<p>Retrofit 已经提供了足够的注解来表示一个方法。</p>
+<p>Retrofit的核心思想AOP，面向切面变成，通过动态代理的反射，将接口文件里的每个方法记性处理，也就是分析该方法的注解生成一个ServiceMethod类。</p>
+<p>Retrofit 里有个关键的类，ServiceMethod</p>
+<pre><code class="language-java">@SuppressWarnings(&quot;unchecked&quot;) // Single-interface proxy creation guarded by parameter safety.
+public &lt;T&gt; T create(final Class&lt;T&gt; service) {
+  Utils.validateServiceInterface(service);
+  if (validateEagerly) {
+    eagerlyValidateMethods(service);
+  }
+  return (T) Proxy.newProxyInstance(service.getClassLoader(), new Class&lt;?&gt;[] { service },
+      new InvocationHandler() {
+        private final Platform platform = Platform.get();
+
+        @Override public Object invoke(Object proxy, Method method, Object... args)
+            throws Throwable {
+          // If the method is a method from Object then defer to normal invocation.
+          if (method.getDeclaringClass() == Object.class) {
+            return method.invoke(this, args);
+          }
+          if (platform.isDefaultMethod(method)) {
+            return platform.invokeDefaultMethod(method, service, proxy, args);
+          }
+            //创建ServiceMethod对象
+          ServiceMethod serviceMethod = loadServiceMethod(method);
+          OkHttpCall okHttpCall = new OkHttpCall&lt;&gt;(serviceMethod, args);
+          return serviceMethod.callAdapter.adapt(okHttpCall);
+        }
+      });
+}
+</code></pre>
+<p>从第3步我们可以看出create方法的实现就是使用了动态代理，在运行时生成了GitHubService对象。</p>
+<p>//创建ServiceMethod对象<br>
+ServiceMethod serviceMethod = loadServiceMethod(method);</p>
+<pre><code class="language-java">ServiceMethod loadServiceMethod(Method method) {
+  ServiceMethod result;
+  synchronized (serviceMethodCache) {
+  //先从换从中取改方法对应的ServiceMethod对象，如果为null就构建一个ServiceMethod对象并存入到map中，如果不为null直接返回
+    result = serviceMethodCache.get(method);
+    if (result == null) {
+      result = new ServiceMethod.Builder(this, method).build();
+      serviceMethodCache.put(method, result);
+    }
+  }
+  return result;
+}
+</code></pre>
+<p>我们可以看到loadServiceMethod(Method method)方法返回了一个ServiceMethod对象<br>
+这个serviceMethodCache对象是Retrofit的一个字段，是一个Map集合。</p>
+<p><code>private final Map&lt;Method, ServiceMethod&gt; serviceMethodCache = new LinkedHashMap&lt;&gt;();</code></p>
+<p>将接口文件里每个方法转换为一个ServiceMethod对象后放入改map中作为缓存，下次调用该方法后就不用再次解析改方法对象了，直接从改map里去以方法为key去取对应的ServiceMethod就行了。666</p>
+<p>接下来看一下ServiceMethod对象的构造</p>
+<h1 id="servicemethod">ServiceMethod</h1>
+<pre><code class="language-java">final class ServiceMethod&lt;T&gt; {
+  // Upper and lower characters, digits, underscores, and hyphens, starting with a character.
+  static final String PARAM = &quot;[a-zA-Z][a-zA-Z0-9_-]*&quot;;
+  static final Pattern PARAM_URL_REGEX = Pattern.compile(&quot;\\{(&quot; + PARAM + &quot;)\\}&quot;);
+  static final Pattern PARAM_NAME_REGEX = Pattern.compile(PARAM);
+
+  final okhttp3.Call.Factory callFactory;
+  final CallAdapter&lt;?&gt; callAdapter;
+
+  private final HttpUrl baseUrl; 主机地址
+  private final Converter&lt;ResponseBody, T&gt; responseConverter;
+  private final String httpMethod; 
+  private final String relativeUrl; 相对路径
+  private final Headers headers;    请求头部信息
+  private final MediaType contentType; 请求参数类型
+  private final boolean hasBody;  是否有请求体
+  private final boolean isFormEncoded; 是否是格式化的表单
+  private final boolean isMultipart; 是不是分块
+  private final ParameterHandler&lt;?&gt;[] parameterHandlers;
+
+  ServiceMethod(Builder&lt;T&gt; builder) {
+    this.callFactory = builder.retrofit.callFactory();
+    this.callAdapter = builder.callAdapter;
+    this.baseUrl = builder.retrofit.baseUrl();
+    this.responseConverter = builder.responseConverter;
+    this.httpMethod = builder.httpMethod;
+    this.relativeUrl = builder.relativeUrl;
+    this.headers = builder.headers;
+    this.contentType = builder.contentType;
+    this.hasBody = builder.hasBody;
+    this.isFormEncoded = builder.isFormEncoded;
+    this.isMultipart = builder.isMultipart;
+    this.parameterHandlers = builder.parameterHandlers;
+  }
+}
+</code></pre>
+<p>ServiceMethod是采用Builder模式创建的。</p>
+<pre><code class="language-java">static final class Builder&lt;T&gt; {
+  final Retrofit retrofit;
+  final Method method; 		//接口里生命的方法
+  final Annotation[] methodAnnotations;  //方法的注解，get/post/header之类的
+  final Annotation[][] parameterAnnotationsArray; //方法的参数注解数组，二维数组
+  final Type[] parameterTypes;  //方法的参数数组
+
+  Type responseType;
+  boolean gotField;
+  boolean gotPart;
+  boolean gotBody;
+  boolean gotPath;
+  boolean gotQuery;
+  boolean gotUrl;
+  String httpMethod;
+  boolean hasBody;
+  boolean isFormEncoded;
+  boolean isMultipart;
+  String relativeUrl;
+  Headers headers;
+  MediaType contentType;
+  Set&lt;String&gt; relativeUrlParamNames;
+  ParameterHandler&lt;?&gt;[] parameterHandlers;
+  Converter&lt;ResponseBody, T&gt; responseConverter;
+  CallAdapter&lt;?&gt; callAdapter;
+
+  public Builder(Retrofit retrofit, Method method) {
+    this.retrofit = retrofit;
+    this.method = method;
+    this.methodAnnotations = method.getAnnotations(); //获取方法的注解
+    this.parameterTypes = method.getGenericParameterTypes(); //获取被注解修饰的方法，一个数组
+    this.parameterAnnotationsArray = method.getParameterAnnotations(); //获取方法的参数注解信息，是一个二维数组
+  }
+</code></pre>
+<p>Builder的构造参数需要一个Retrofit对象和一个Method对象。</p>
+<p>首先解析方法对象，将其注解和参数注解放到对应的数组里。</p>
+<p>首先在构造方法里获取该方法的注解,方法的参数，以及每个参数的注解。</p>
+<p>关键就在build方法，在build方法里对方法做了一个彻底的分解</p>
+<pre><code class="language-java">public ServiceMethod build() {
+  //1 处理返回结果，做一定的转换
+  callAdapter = createCallAdapter();
+  responseType = callAdapter.responseType();
+  if (responseType == Response.class || responseType == okhttp3.Response.class) {
+    throw methodError(&quot;'&quot;
+        + Utils.getRawType(responseType).getName()
+        + &quot;' is not a valid response body type. Did you mean ResponseBody?&quot;);
+  }
+  responseConverter = createResponseConverter();
+
+    //2提取方法的注解
+  for (Annotation annotation : methodAnnotations) {
+    parseMethodAnnotation(annotation);
+  }
+	//如果httpMethod为null，即没有使用方法类型注解修饰，抛出异常进行提示
+  if (httpMethod == null) {
+    throw methodError(&quot;HTTP method annotation is required (e.g., @GET, @POST, etc.).&quot;);
+  }
+//如果没有请求体，即使用了GET，HEAD，DELETE，OPTIONS等所修饰，即不涉及到表单的提交，但是同时使用了Multipart，或者FormUrlEncoded所修饰，就报错
+  if (!hasBody) {
+    if (isMultipart) {
+      throw methodError(
+          &quot;Multipart can only be specified on HTTP methods with request body (e.g., @POST).&quot;);
+    }
+    if (isFormEncoded) {
+      throw methodError(&quot;FormUrlEncoded can only be specified on HTTP methods with &quot;
+          + &quot;request body (e.g., @POST).&quot;);
+    }
+  }
+
+  //3提取方法的参数
+  int parameterCount = parameterAnnotationsArray.length;
+  parameterHandlers = new ParameterHandler&lt;?&gt;[parameterCount];
+  for (int p = 0; p &lt; parameterCount; p++) {
+    Type parameterType = parameterTypes[p];
+    if (Utils.hasUnresolvableType(parameterType)) {
+      throw parameterError(p, &quot;Parameter type must not include a type variable or wildcard: %s&quot;,
+          parameterType);
+    }
+
+    Annotation[] parameterAnnotations = parameterAnnotationsArray[p];
+    if (parameterAnnotations == null) {
+      throw parameterError(p, &quot;No Retrofit annotation found.&quot;);
+    }
+
+    parameterHandlers[p] = parseParameter(p, parameterType, parameterAnnotations);
+  }
+
+  //相对路径为null且gotURL为false的话，抛出异常，因为没有相对路径无法请求。
+  if (relativeUrl == null &amp;&amp; !gotUrl) {
+    throw methodError(&quot;Missing either @%s URL or @Url parameter.&quot;, httpMethod);
+  }
+  //没有使用@FormUrlEncoded，@Multipart主机并且hasBody为false，但是gotBody为true，抛出异常，提示
+    Non-Body类型的HTTP method 不能参数不能使用@Body注解
+  if (!isFormEncoded &amp;&amp; !isMultipart &amp;&amp; !hasBody &amp;&amp; gotBody) {
+    throw methodError(&quot;Non-body HTTP method cannot contain @Body.&quot;);
+  }
+  //使用@FormUrlEncoded修饰的方法中的参数至少有一个参数被@Field注解修饰
+  if (isFormEncoded &amp;&amp; !gotField) {
+    throw methodError(&quot;Form-encoded method must contain at least one @Field.&quot;);
+  }
+    
+  //使用@Multipart修饰的方法中的参数至少有一个参数被@Part注解修饰
+  if (isMultipart &amp;&amp; !gotPart) {
+    throw methodError(&quot;Multipart method must contain at least one @Part.&quot;);
+  }
+
+ //4 当前Builder对象初始化完毕，可以用来够着ServiceMethod对象。
+  return new ServiceMethod&lt;&gt;(this);
+}
+</code></pre>
+<h2 id="处理返回结果">处理返回结果</h2>
+<pre><code class="language-java">private CallAdapter&lt;?&gt; createCallAdapter() {
+  //获取方法的返回结果,如果有不能解析的类型则抛出异常，也就是说接口中定义的方法的返回值不能使用泛型
+  Type returnType = method.getGenericReturnType();
+  if (Utils.hasUnresolvableType(returnType)) {
+    throw methodError(
+        &quot;Method return type must not include a type variable or wildcard: %s&quot;, returnType);
+  }
+   //接口里的方法不能返回void
+  if (returnType == void.class) {
+    throw methodError(&quot;Service methods cannot return void.&quot;);
+  }
+  Annotation[] annotations = method.getAnnotations();
+  try {
+    return retrofit.callAdapter(returnType, annotations);
+  } catch (RuntimeException e) { // Wide exception range because factories are user code.
+    //用户自定义的Adapter可能不能正确的处理返回结果，这时候抛出异常
+    throw methodError(e, &quot;Unable to create call adapter for %s&quot;, returnType);
+  }
+}
+</code></pre>
+<h2 id="解析方法注解">解析方法注解</h2>
+<p>1处处理方法的注解，就是先处理GET/POST/Header等注解信息</p>
+<pre><code>private void parseMethodAnnotation(Annotation annotation) {
+  if (annotation instanceof DELETE) {
+    parseHttpMethodAndPath(&quot;DELETE&quot;, ((DELETE) annotation).value(), false);
+  } else if (annotation instanceof GET) {
+    parseHttpMethodAndPath(&quot;GET&quot;, ((GET) annotation).value(), false);
+  } else if (annotation instanceof HEAD) {
+    parseHttpMethodAndPath(&quot;HEAD&quot;, ((HEAD) annotation).value(), false);
+    if (!Void.class.equals(responseType)) {
+      throw methodError(&quot;HEAD method must use Void as response type.&quot;);
+    }
+  } else if (annotation instanceof PATCH) {
+    parseHttpMethodAndPath(&quot;PATCH&quot;, ((PATCH) annotation).value(), true);
+  } else if (annotation instanceof POST) {
+    parseHttpMethodAndPath(&quot;POST&quot;, ((POST) annotation).value(), true);
+  } else if (annotation instanceof PUT) {
+    parseHttpMethodAndPath(&quot;PUT&quot;, ((PUT) annotation).value(), true);
+  } else if (annotation instanceof OPTIONS) {
+    parseHttpMethodAndPath(&quot;OPTIONS&quot;, ((OPTIONS) annotation).value(), false);
+  } else if (annotation instanceof HTTP) {
+    HTTP http = (HTTP) annotation;
+    parseHttpMethodAndPath(http.method(), http.path(), http.hasBody());
+  } else if (annotation instanceof retrofit2.http.Headers) {
+  headers注解
+    String[] headersToParse = ((retrofit2.http.Headers) annotation).value();
+    if (headersToParse.length == 0) {
+      throw methodError(&quot;@Headers annotation is empty.&quot;);
+    }
+    headers = parseHeaders(headersToParse);
+  } else if (annotation instanceof Multipart) {//如果是Multipart注解
+    if (isFormEncoded) {
+    //如果同时使用了FormUrlEncoded注解报错
+      throw methodError(&quot;Only one encoding annotation is allowed.&quot;);
+    }
+    isMultipart = true;
+  } else if (annotation instanceof FormUrlEncoded) {
+    if (isMultipart) {
+    //如果同时使用了Multipart注解报错,从这我们可以看出一个方法不能同时被Multipart和FormUrlEncoded所修饰
+      throw methodError(&quot;Only one encoding annotation is allowed.&quot;);
+    }
+    isFormEncoded = true;
+  }
+}
+</code></pre>
+<p>然后根据具体的注解类型，在做进一步的处理，这里主要分析GET/POST/HEADER/ 等注解</p>
+<h3 id="get">@GET</h3>
+<pre><code class="language-java">else if (annotation instanceof GET) {
+  parseHttpMethodAndPath(&quot;GET&quot;, ((GET) annotation).value(), false);
+} 
+</code></pre>
+<p>get类型的请求，没有请求体</p>
+<pre><code class="language-java">private void parseHttpMethodAndPath(String httpMethod, String value, boolean hasBody) {
+ //如果该Builder已经有HTTPMethod了就不能改变了，直接抛异常
+    if (this.httpMethod != null) {
+    throw methodError(&quot;Only one HTTP method is allowed. Found: %s and %s.&quot;,
+        this.httpMethod, httpMethod);
+  }
+  //将HTTPMethod赋值给httpMethod对象，Get、Post、Delete等
+  this.httpMethod = httpMethod;
+  this.hasBody = hasBody;//是否有请求体
+
+    //如果value为null，返回，因为value参数的值其实就是relativeURL。所以不能为null
+  if (value.isEmpty()) {
+    return;
+  }
+
+  // Get the relative URL path and existing query string, if present.
+  int question = value.indexOf('?');
+  if (question != -1 &amp;&amp; question &lt; value.length() - 1) {
+    // Ensure the query string does not have any named parameters.
+    String queryParams = value.substring(question + 1);
+      //获取查询参数
+    Matcher queryParamMatcher = PARAM_URL_REGEX.matcher(queryParams);
+    if (queryParamMatcher.find()) {
+        //如果在value里面找到里查询参数的话，抛出异常。因为查询参数可以使用@Query注解来动态配置。
+      throw methodError(&quot;URL query string \&quot;%s\&quot; must not have replace block. &quot;
+          + &quot;For dynamic query parameters use @Query.&quot;, queryParams);
+    }
+  }
+
+  this.relativeUrl = value; //将value赋值给relativeUrl
+  this.relativeUrlParamNames = parsePathParameters(value); //获取value里面的path占位符，如果有的话
+}
+</code></pre>
+<p>再来看下解析value里的path占位符的方法。</p>
+<pre><code>/**
+获取已知URI里面的路径集合，如果一个参数被使用了两次，它只会在set中出现一次，好拗口啊，使用LinkedHashSet来保存path参数集合，保证了路径参数的顺序。
+ * Gets the set of unique path parameters used in the given URI. If a parameter is used twice
+ * in the URI, it will only show up once in the set.
+ */
+static Set&lt;String&gt; parsePathParameters(String path) {
+  Matcher m = PARAM_URL_REGEX.matcher(path);
+  Set&lt;String&gt; patterns = new LinkedHashSet&lt;&gt;();
+  while (m.find()) {
+    patterns.add(m.group(1));
+  }
+  return patterns;
+}
+</code></pre>
+<p>至此，GET方法的相关的注解分析完毕</p>
+<h3 id="post">@POST</h3>
+<pre><code class="language-Java">else if (annotation instanceof POST) {
+  parseHttpMethodAndPath(&quot;POST&quot;, ((POST) annotation).value(), true);
+} 
+</code></pre>
+<p>POST类型的请求，没有请求体。所以hasBody参数为true。</p>
+<p>parseHttpMethodAndPath()方法已将在GET方法里面分析过了，这里面都一样。</p>
+<p>其他的请求类型也是大同小异。</p>
+<p>然后接着分析方法的Header注解</p>
+<h3 id="headers">@Headers</h3>
+<pre><code class="language-java">else if (annotation instanceof retrofit2.http.Headers) {
+ //   首先获取Headers注解的值，是一个字符串数组。
+  String[] headersToParse = ((retrofit2.http.Headers) annotation).value();
+    如果header注解长度为0，抛出异常，所以使用了header注解必须设置值，不能存在空的header
+  if (headersToParse.length == 0) {
+    throw methodError(&quot;@Headers annotation is empty.&quot;);
+  }
+    处理header信息，我猜肯定是一个map
+  headers = parseHeaders(headersToParse);
+</code></pre>
+<p>啊，居然不是，666.因为header不是KV结构的数据类型，而是一个key可以对应多个值。理论上可以使用Map&lt;String,Set<String>&gt;表示。</p>
+<pre><code>private Headers parseHeaders(String[] headers) {
+  Headers.Builder builder = new Headers.Builder();
+  for (String header : headers) {
+  // header以“:&quot;分割，前面是key,后面是value
+    int colon = header.indexOf(':');
+    if (colon == -1 || colon == 0 || colon == header.length() - 1) {
+    //header必须是key:value格式表示，不然报错
+      throw methodError(
+          &quot;@Headers value must be in the form \&quot;Name: Value\&quot;. Found: \&quot;%s\&quot;&quot;, header);
+    }
+    String headerName = header.substring(0, colon); //key值
+    String headerValue = header.substring(colon + 1).trim(); //value值，必须是一个数组，艹，又猜错了。
+    if (&quot;Content-Type&quot;.equalsIgnoreCase(headerName)) {
+    //遇到&quot;Content-Type&quot;字段。还需要获得具体的MediaType。
+      MediaType type = MediaType.parse(headerValue);
+      if (type == null) {
+      //如果mediaType为null。抛出一个type畸形的错误。
+        throw methodError(&quot;Malformed content type: %s&quot;, headerValue);
+      }
+      contentType = type;
+    } else {
+    将header的key和value加入到Builder里面。
+      builder.add(headerName, headerValue);
+    }
+  }
+  最后调用build方法生成一个Header对爱。
+  return builder.build();
+}
+</code></pre>
+<pre><code class="language-java">/**
+ * Add a header with the specified name and value. Does validation of header names and values.
+ */
+public Builder add(String name, String value) {
+  checkNameAndValue(name, value);
+  return addLenient(name, value);
+}
+</code></pre>
+<pre><code class="language-Java">Builder addLenient(String name, String value) {
+  namesAndValues.add(name);
+  namesAndValues.add(value.trim());
+  return this;
+}
+</code></pre>
+<pre><code class="language-java">final List&lt;String&gt; namesAndValues = new ArrayList&lt;&gt;(20);
+</code></pre>
+<p>namesAndValues是Header.Builder类的一种子段。可见在Builder内部header信息是按照key/value异常放到一个String集合里面的。为什么不放到一个Map里面呢，不懂。</p>
+<p>总之，最后就是讲方法的Headers注解信息提取完毕。</p>
+<h2 id="处理方法参数">处理方法参数</h2>
+<pre><code class="language-java">int parameterCount = parameterAnnotationsArray.length; //求得数组的长度
+parameterHandlers = new ParameterHandler&lt;?&gt;[parameterCount];
+for (int p = 0; p &lt; parameterCount; p++) {
+  Type parameterType = parameterTypes[p]; //便利参数，依次处理参数
+    //如果参数不能解析，抛出异常
+  if (Utils.hasUnresolvableType(parameterType)) {
+    throw parameterError(p, &quot;Parameter type must not include a type variable or wildcard: %s&quot;,
+        parameterType);
+  }
+//获取第p个参数的注解数组，如果没有注解抛出异常，可见，使用了Retrofit，接口方法中每个参数都必须使用注解进行修饰。
+  Annotation[] parameterAnnotations = parameterAnnotationsArray[p];
+  if (parameterAnnotations == null) {
+    throw parameterError(p, &quot;No Retrofit annotation found.&quot;);
+  }
+
+   //解析方法中的参数，存入parameterHandlers[]数组中。
+  parameterHandlers[p] = parseParameter(p, parameterType, parameterAnnotations);
+}
+</code></pre>
+<h2 id="参数校验">参数校验</h2>
+<p>Utils.hasUnresolvableType(parameterType)，这个方法是对参数的类型做个校验。</p>
+<pre><code>static boolean hasUnresolvableType(Type type) {
+  //如果参数是引用数据类型，返回false，可见，接口定义中方法的参数只能是基本数据类型
+  if (type instanceof Class&lt;?&gt;) {
+    return false;
+  }
+  //如果参数是泛型
+  if (type instanceof ParameterizedType) {
+    ParameterizedType parameterizedType = (ParameterizedType) type;
+    //去除泛型类中的实际类型，遍历
+    for (Type typeArgument : parameterizedType.getActualTypeArguments()) {
+    //如果有一个泛型参数是基本数据类型，返回true，都不是返回false
+      if (hasUnresolvableType(typeArgument)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  //如果参数是泛型数组类型
+  if (type instanceof GenericArrayType) {
+    return hasUnresolvableType(((GenericArrayType) type).getGenericComponentType());
+  }
+  if (type instanceof TypeVariable) {
+    return true;
+  }
+  if (type instanceof WildcardType) {
+    return true;
+  }
+  String className = type == null ? &quot;null&quot; : type.getClass().getName();
+  throw new IllegalArgumentException(&quot;Expected a Class, ParameterizedType, or &quot;
+      + &quot;GenericArrayType, but &lt;&quot; + type + &quot;&gt; is of type &quot; + className);
+}
+
+</code></pre>
+<h2 id="解析参数">解析参数</h2>
+<pre><code class="language-java">parameterHandlers[p] = parseParameter(p, parameterType, parameterAnnotations);
+private ParameterHandler&lt;?&gt; parseParameter(
+        int p, Type parameterType, Annotation[] annotations) {
+      ParameterHandler&lt;?&gt; result = null;
+    //遍历参数的注解数组，调用parseParameterAnnotation()
+      for (Annotation annotation : annotations) {
+        ParameterHandler&lt;?&gt; annotationAction = parseParameterAnnotation(
+            p, parameterType, annotations, annotation);
+		//如果该注解没有返回，则解析下一个注解
+        if (annotationAction == null) {
+          continue;
+        }
+
+        if (result != null) {
+          throw parameterError(p, &quot;Multiple Retrofit annotations found, only one allowed.&quot;);
+        }
+		
+        result = annotationAction; //将解析的结果赋值给Result
+      }
+
+    //如果注解为null，抛出异常。这个地方永远不会调用，因为在获取注解数组之前就做过判断了，如果注解数组为null，直接抛异常，Line197-Line200 in ServiceMethod.Builder中
+      if (result == null) {
+        throw parameterError(p, &quot;No Retrofit annotation found.&quot;);
+      }
+
+      return result;
+    }
+</code></pre>
+<h2 id="获取参数注解信息">获取参数注解信息</h2>
+<p>再来看看parseParameterAnnotation()方法,内容略多</p>
+<pre><code class="language-Java">private ParameterHandler&lt;?&gt; parseParameterAnnotation(
+    int p, Type type, Annotation[] annotations, Annotation annotation) {
+  if (annotation instanceof Url) {
+      //如果使用了Url注解，
+    if (gotUrl) {
+        //如果gotUrl为true，因为gotURL默认为false，说明之前处理过Url注解了,抛出多个@Url注解异常
+      throw parameterError(p, &quot;Multiple @Url method annotations found.&quot;);
+    }
+    if (gotPath) {
+        //如果gotPath为true，抛出异常，说明@Path注解不能和@Url注解一起使用
+      throw parameterError(p, &quot;@Path parameters may not be used with @Url.&quot;);
+    }
+    if (gotQuery) {
+        //如果gotQuery为true，抛出异常，说明@Url注解不能用在@Query注解后面
+      throw parameterError(p, &quot;A @Url parameter must not come after a @Query&quot;);
+    }
+    if (relativeUrl != null) {
+        //如果relativeUrl不为null,抛出异常，说明使用了@Url注解，relativeUrl必须为null
+      throw parameterError(p, &quot;@Url cannot be used with @%s URL&quot;, httpMethod);
+    }
+
+    gotUrl = true;
+      
+----------------------------------------------------------------------------------------    
+      //如果参数类型是HttpURL，String，URI或者参数类型是“android.net.Uri&quot;,返回ParameterHandler.RelativeUrl()，实际是交由这个类处理
+    if (type == HttpUrl.class
+        || type == String.class
+        || type == URI.class
+        || (type instanceof Class &amp;&amp; &quot;android.net.Uri&quot;.equals(((Class&lt;?&gt;) type).getName()))) {
+      return new ParameterHandler.RelativeUrl();
+    } else {
+        //不然就抛出异常，也就是说@Url注解必须使用在okhttp3.HttpUrl, String, java.net.URI, or android.net.Uri 这几种类型的参数上。
+      throw parameterError(p,
+          &quot;@Url must be okhttp3.HttpUrl, String, java.net.URI, or android.net.Uri type.&quot;);
+    }
+------------------------------------------------------------------------------------------
+  } else if (annotation instanceof Path) { //@Path注解
+     //如果gotQuery为true。抛出异常，因为@Path修饰的参数是路径的占位符。不是查询参数，不能使用@Query注解修饰
+    if (gotQuery) {
+      throw parameterError(p, &quot;A @Path parameter must not come after a @Query.&quot;);
+    }
+    if (gotUrl) {
+      throw parameterError(p, &quot;@Path parameters may not be used with @Url.&quot;);
+    }
+      //如果相对路径为null，那@path注解也就无意义了。
+    if (relativeUrl == null) {
+      throw parameterError(p, &quot;@Path can only be used with relative url on @%s&quot;, httpMethod);
+    }
+    gotPath = true;
+
+    Path path = (Path) annotation;
+    String name = path.value(); //获取@Path注解的值
+    validatePathName(p, name); //对改值进行校验，1该value必须是合法字符，2:该相对路径必须包含相应的占位符
+ 
+      //然后将改参数的所有注解进行处理，最终调用ParameterHandler.Path进行处理。
+    Converter&lt;?, String&gt; converter = retrofit.stringConverter(type, annotations);
+    return new ParameterHandler.Path&lt;&gt;(name, converter, path.encoded());
+
+  } else if (annotation instanceof Query) { //Query注解，看不太懂，最后也是调用ParameterHandler.Query进行处理
+    Query query = (Query) annotation;
+    String name = query.value();
+    boolean encoded = query.encoded();
+
+    Class&lt;?&gt; rawParameterType = Utils.getRawType(type);
+    gotQuery = true;
+    if (Iterable.class.isAssignableFrom(rawParameterType)) {
+      if (!(type instanceof ParameterizedType)) {
+        throw parameterError(p, rawParameterType.getSimpleName()
+            + &quot; must include generic type (e.g., &quot;
+            + rawParameterType.getSimpleName()
+            + &quot;&lt;String&gt;)&quot;);
+      }
+      ParameterizedType parameterizedType = (ParameterizedType) type;
+      Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(iterableType, annotations);
+      return new ParameterHandler.Query&lt;&gt;(name, converter, encoded).iterable();
+    } else if (rawParameterType.isArray()) {
+      Class&lt;?&gt; arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(arrayComponentType, annotations);
+      return new ParameterHandler.Query&lt;&gt;(name, converter, encoded).array();
+    } else {
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(type, annotations);
+      return new ParameterHandler.Query&lt;&gt;(name, converter, encoded);
+    }
+
+  } else if (annotation instanceof QueryMap) {
+    Class&lt;?&gt; rawParameterType = Utils.getRawType(type);
+    if (!Map.class.isAssignableFrom(rawParameterType)) {
+      throw parameterError(p, &quot;@QueryMap parameter type must be Map.&quot;);
+    }
+    Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
+    if (!(mapType instanceof ParameterizedType)) {
+      throw parameterError(p, &quot;Map must include generic types (e.g., Map&lt;String, String&gt;)&quot;);
+    }
+    ParameterizedType parameterizedType = (ParameterizedType) mapType;
+    Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
+    if (String.class != keyType) {
+      throw parameterError(p, &quot;@QueryMap keys must be of type String: &quot; + keyType);
+    }
+    Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+    Converter&lt;?, String&gt; valueConverter =
+        retrofit.stringConverter(valueType, annotations);
+
+    return new ParameterHandler.QueryMap&lt;&gt;(valueConverter, ((QueryMap) annotation).encoded());
+
+  } else if (annotation instanceof Header) {
+    Header header = (Header) annotation;
+    String name = header.value();
+
+    Class&lt;?&gt; rawParameterType = Utils.getRawType(type);
+    if (Iterable.class.isAssignableFrom(rawParameterType)) {
+      if (!(type instanceof ParameterizedType)) {
+        throw parameterError(p, rawParameterType.getSimpleName()
+            + &quot; must include generic type (e.g., &quot;
+            + rawParameterType.getSimpleName()
+            + &quot;&lt;String&gt;)&quot;);
+      }
+      ParameterizedType parameterizedType = (ParameterizedType) type;
+      Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(iterableType, annotations);
+      return new ParameterHandler.Header&lt;&gt;(name, converter).iterable();
+    } else if (rawParameterType.isArray()) {
+      Class&lt;?&gt; arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(arrayComponentType, annotations);
+      return new ParameterHandler.Header&lt;&gt;(name, converter).array();
+    } else {
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(type, annotations);
+      return new ParameterHandler.Header&lt;&gt;(name, converter);
+    }
+
+  } else if (annotation instanceof HeaderMap) {
+    Class&lt;?&gt; rawParameterType = Utils.getRawType(type);
+    if (!Map.class.isAssignableFrom(rawParameterType)) {
+      throw parameterError(p, &quot;@HeaderMap parameter type must be Map.&quot;);
+    }
+    Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
+    if (!(mapType instanceof ParameterizedType)) {
+      throw parameterError(p, &quot;Map must include generic types (e.g., Map&lt;String, String&gt;)&quot;);
+    }
+    ParameterizedType parameterizedType = (ParameterizedType) mapType;
+    Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
+    if (String.class != keyType) {
+      throw parameterError(p, &quot;@HeaderMap keys must be of type String: &quot; + keyType);
+    }
+    Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+    Converter&lt;?, String&gt; valueConverter =
+        retrofit.stringConverter(valueType, annotations);
+
+    return new ParameterHandler.HeaderMap&lt;&gt;(valueConverter);
+
+  } else if (annotation instanceof Field) {
+    if (!isFormEncoded) {
+      throw parameterError(p, &quot;@Field parameters can only be used with form encoding.&quot;);
+    }
+    Field field = (Field) annotation;
+    String name = field.value();
+    boolean encoded = field.encoded();
+
+    gotField = true;
+
+    Class&lt;?&gt; rawParameterType = Utils.getRawType(type);
+    if (Iterable.class.isAssignableFrom(rawParameterType)) {
+      if (!(type instanceof ParameterizedType)) {
+        throw parameterError(p, rawParameterType.getSimpleName()
+            + &quot; must include generic type (e.g., &quot;
+            + rawParameterType.getSimpleName()
+            + &quot;&lt;String&gt;)&quot;);
+      }
+      ParameterizedType parameterizedType = (ParameterizedType) type;
+      Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(iterableType, annotations);
+      return new ParameterHandler.Field&lt;&gt;(name, converter, encoded).iterable();
+    } else if (rawParameterType.isArray()) {
+      Class&lt;?&gt; arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(arrayComponentType, annotations);
+      return new ParameterHandler.Field&lt;&gt;(name, converter, encoded).array();
+    } else {
+      Converter&lt;?, String&gt; converter =
+          retrofit.stringConverter(type, annotations);
+      return new ParameterHandler.Field&lt;&gt;(name, converter, encoded);
+    }
+
+  } else if (annotation instanceof FieldMap) {
+    if (!isFormEncoded) {
+      throw parameterError(p, &quot;@FieldMap parameters can only be used with form encoding.&quot;);
+    }
+    Class&lt;?&gt; rawParameterType = Utils.getRawType(type);
+    if (!Map.class.isAssignableFrom(rawParameterType)) {
+      throw parameterError(p, &quot;@FieldMap parameter type must be Map.&quot;);
+    }
+    Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
+    if (!(mapType instanceof ParameterizedType)) {
+      throw parameterError(p,
+          &quot;Map must include generic types (e.g., Map&lt;String, String&gt;)&quot;);
+    }
+    ParameterizedType parameterizedType = (ParameterizedType) mapType;
+    Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
+    if (String.class != keyType) {
+      throw parameterError(p, &quot;@FieldMap keys must be of type String: &quot; + keyType);
+    }
+    Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+    Converter&lt;?, String&gt; valueConverter =
+        retrofit.stringConverter(valueType, annotations);
+
+    gotField = true;
+    return new ParameterHandler.FieldMap&lt;&gt;(valueConverter, ((FieldMap) annotation).encoded());
+
+  } else if (annotation instanceof Part) {
+    if (!isMultipart) {
+      throw parameterError(p, &quot;@Part parameters can only be used with multipart encoding.&quot;);
+    }
+    Part part = (Part) annotation;
+    gotPart = true;
+
+    String partName = part.value();
+    Class&lt;?&gt; rawParameterType = Utils.getRawType(type);
+    if (partName.isEmpty()) {
+      if (Iterable.class.isAssignableFrom(rawParameterType)) {
+        if (!(type instanceof ParameterizedType)) {
+          throw parameterError(p, rawParameterType.getSimpleName()
+              + &quot; must include generic type (e.g., &quot;
+              + rawParameterType.getSimpleName()
+              + &quot;&lt;String&gt;)&quot;);
+        }
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+        if (!MultipartBody.Part.class.isAssignableFrom(Utils.getRawType(iterableType))) {
+          throw parameterError(p,
+              &quot;@Part annotation must supply a name or use MultipartBody.Part parameter type.&quot;);
+        }
+        return ParameterHandler.RawPart.INSTANCE.iterable();
+      } else if (rawParameterType.isArray()) {
+        Class&lt;?&gt; arrayComponentType = rawParameterType.getComponentType();
+        if (!MultipartBody.Part.class.isAssignableFrom(arrayComponentType)) {
+          throw parameterError(p,
+              &quot;@Part annotation must supply a name or use MultipartBody.Part parameter type.&quot;);
+        }
+        return ParameterHandler.RawPart.INSTANCE.array();
+      } else if (MultipartBody.Part.class.isAssignableFrom(rawParameterType)) {
+        return ParameterHandler.RawPart.INSTANCE;
+      } else {
+        throw parameterError(p,
+            &quot;@Part annotation must supply a name or use MultipartBody.Part parameter type.&quot;);
+      }
+    } else {
+      Headers headers =
+          Headers.of(&quot;Content-Disposition&quot;, &quot;form-data; name=\&quot;&quot; + partName + &quot;\&quot;&quot;,
+              &quot;Content-Transfer-Encoding&quot;, part.encoding());
+
+      if (Iterable.class.isAssignableFrom(rawParameterType)) {
+        if (!(type instanceof ParameterizedType)) {
+          throw parameterError(p, rawParameterType.getSimpleName()
+              + &quot; must include generic type (e.g., &quot;
+              + rawParameterType.getSimpleName()
+              + &quot;&lt;String&gt;)&quot;);
+        }
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+        if (MultipartBody.Part.class.isAssignableFrom(Utils.getRawType(iterableType))) {
+          throw parameterError(p, &quot;@Part parameters using the MultipartBody.Part must not &quot;
+              + &quot;include a part name in the annotation.&quot;);
+        }
+        Converter&lt;?, RequestBody&gt; converter =
+            retrofit.requestBodyConverter(iterableType, annotations, methodAnnotations);
+        return new ParameterHandler.Part&lt;&gt;(headers, converter).iterable();
+      } else if (rawParameterType.isArray()) {
+        Class&lt;?&gt; arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+        if (MultipartBody.Part.class.isAssignableFrom(arrayComponentType)) {
+          throw parameterError(p, &quot;@Part parameters using the MultipartBody.Part must not &quot;
+              + &quot;include a part name in the annotation.&quot;);
+        }
+        Converter&lt;?, RequestBody&gt; converter =
+            retrofit.requestBodyConverter(arrayComponentType, annotations, methodAnnotations);
+        return new ParameterHandler.Part&lt;&gt;(headers, converter).array();
+      } else if (MultipartBody.Part.class.isAssignableFrom(rawParameterType)) {
+        throw parameterError(p, &quot;@Part parameters using the MultipartBody.Part must not &quot;
+            + &quot;include a part name in the annotation.&quot;);
+      } else {
+        Converter&lt;?, RequestBody&gt; converter =
+            retrofit.requestBodyConverter(type, annotations, methodAnnotations);
+        return new ParameterHandler.Part&lt;&gt;(headers, converter);
+      }
+    }
+
+  } else if (annotation instanceof PartMap) {
+    if (!isMultipart) {
+      throw parameterError(p, &quot;@PartMap parameters can only be used with multipart encoding.&quot;);
+    }
+    gotPart = true;
+    Class&lt;?&gt; rawParameterType = Utils.getRawType(type);
+    if (!Map.class.isAssignableFrom(rawParameterType)) {
+      throw parameterError(p, &quot;@PartMap parameter type must be Map.&quot;);
+    }
+    Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
+    if (!(mapType instanceof ParameterizedType)) {
+      throw parameterError(p, &quot;Map must include generic types (e.g., Map&lt;String, String&gt;)&quot;);
+    }
+    ParameterizedType parameterizedType = (ParameterizedType) mapType;
+
+    Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
+    if (String.class != keyType) {
+      throw parameterError(p, &quot;@PartMap keys must be of type String: &quot; + keyType);
+    }
+
+    Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+    if (MultipartBody.Part.class.isAssignableFrom(Utils.getRawType(valueType))) {
+      throw parameterError(p, &quot;@PartMap values cannot be MultipartBody.Part. &quot;
+          + &quot;Use @Part List&lt;Part&gt; or a different value type instead.&quot;);
+    }
+
+    Converter&lt;?, RequestBody&gt; valueConverter =
+        retrofit.requestBodyConverter(valueType, annotations, methodAnnotations);
+
+    PartMap partMap = (PartMap) annotation;
+    return new ParameterHandler.PartMap&lt;&gt;(valueConverter, partMap.encoding());
+
+  } else if (annotation instanceof Body) {
+    if (isFormEncoded || isMultipart) {
+      throw parameterError(p,
+          &quot;@Body parameters cannot be used with form or multi-part encoding.&quot;);
+    }
+    if (gotBody) {
+      throw parameterError(p, &quot;Multiple @Body method annotations found.&quot;);
+    }
+
+    Converter&lt;?, RequestBody&gt; converter;
+    try {
+      converter = retrofit.requestBodyConverter(type, annotations, methodAnnotations);
+    } catch (RuntimeException e) {
+      // Wide exception range because factories are user code.
+      throw parameterError(e, p, &quot;Unable to create @Body converter for %s&quot;, type);
+    }
+    gotBody = true;
+    return new ParameterHandler.Body&lt;&gt;(converter);
+  }
+
+  return null; // Not a Retrofit annotation.找不到该注解
+}
+</code></pre>
+<p>从上面可以看出，改立参数注解的套路就是：先判断该注解的类型，然后使用策略模式分别调用ParameterHandler里对应的子类来处理</p>
+<p>写到这里我已经晕了。晕晕乎乎好舒服</p>
+<h3 id="header">@Header</h3>
+<h4 id="使用场景">使用场景</h4>
+<p>有时候我们需要动态的设置请求header中的某个请求头的值，这个时候就可以使用@Header来修饰个参数。</p>
+<p>最终都是讲header里的信息提取到Request里面</p>
+<pre><code class="language-java">static final class Header&lt;T&gt; extends ParameterHandler&lt;T&gt; {
+  private final String name;
+  private final Converter&lt;T, String&gt; valueConverter;
+
+  Header(String name, Converter&lt;T, String&gt; valueConverter) {
+    this.name = checkNotNull(name, &quot;name == null&quot;);
+    this.valueConverter = valueConverter;
+  }
+
+  @Override void apply(RequestBuilder builder, T value) throws IOException {
+    if (value == null) return; // Skip null values.
+    builder.addHeader(name, valueConverter.convert(value));
+  }
+}
+</code></pre>
+<pre><code class="language-java">void addHeader(String name, String value) {
+  if (&quot;Content-Type&quot;.equalsIgnoreCase(name)) {
+    MediaType type = MediaType.parse(value);
+    if (type == null) {
+      throw new IllegalArgumentException(&quot;Malformed content type: &quot; + value);
+    }
+    contentType = type;
+  } else {
+    requestBuilder.addHeader(name, value);
+  }
+}
+</code></pre>
+<p>调用requestBuilder.addHeader()方法。</p>
+<p>这个requestBuilder是OKHttp中Request的内部静态类Builder类的一个对象。</p>
+<pre><code>private final Request.Builder requestBuilder;
+</code></pre>
+<p>从中我们可以看出最后将@Header注释的参数的值解析后添加到Request对象中的Header信息里。</p>
+<h3 id="path">@Path</h3>
+<h4 id="使用场景-2">使用场景</h4>
+<p>有时候请求路径是不定的，即请求路径里的某个segment是变化的，也就是需要我们使用参数来动态的改变，这个时候我们就需要使用@Path 来修饰这个参数</p>
+<pre><code class="language-java">static final class Path&lt;T&gt; extends ParameterHandler&lt;T&gt; {
+  private final String name; //参数名，占位符
+  private final Converter&lt;T, String&gt; valueConverter;
+  private final boolean encoded; //是否编码
+
+  Path(String name, Converter&lt;T, String&gt; valueConverter, boolean encoded) {
+    this.name = checkNotNull(name, &quot;name == null&quot;);
+    this.valueConverter = valueConverter;
+    this.encoded = encoded;
+  }
+
+  @Override void apply(RequestBuilder builder, T value) throws IOException {
+    if (value == null) {
+      throw new IllegalArgumentException(
+          &quot;Path parameter \&quot;&quot; + name + &quot;\&quot; value must not be null.&quot;);
+    }
+    builder.addPathParam(name, valueConverter.convert(value), encoded);
+  }
+}
+</code></pre>
+<pre><code class="language-java">void addPathParam(String name, String value, boolean encoded) {
+  if (relativeUrl == null) {
+    // The relative URL is cleared when the first query parameter is set.
+    throw new AssertionError();
+  }
+   //将占位符”{name}”使用value替换
+  relativeUrl = relativeUrl.replace(&quot;{&quot; + name + &quot;}&quot;, canonicalizeForPath(value, encoded));
+}
+</code></pre>
+<h3 id="query">@Query</h3>
+<h4 id="使用场景-3">使用场景</h4>
+<p>@Query用来修饰接口方法中的查询字段</p>
+<pre><code class="language-java">static final class Query&lt;T&gt; extends ParameterHandler&lt;T&gt; {
+  private final String name;
+  private final Converter&lt;T, String&gt; valueConverter;
+  private final boolean encoded;
+
+  Query(String name, Converter&lt;T, String&gt; valueConverter, boolean encoded) {
+    this.name = checkNotNull(name, &quot;name == null&quot;);
+    this.valueConverter = valueConverter;
+    this.encoded = encoded;
+  }
+
+  @Override void apply(RequestBuilder builder, T value) throws IOException {
+    if (value == null) return; // Skip null values.
+    builder.addQueryParam(name, valueConverter.convert(value), encoded);
+  }
+}
+</code></pre>
+<pre><code class="language-Java">//将查询参数组合到相对路径上。
+void addQueryParam(String name, String value, boolean encoded) {
+  if (relativeUrl != null) {
+    // Do a one-time combination of the built relative URL and the base URL.
+    urlBuilder = baseUrl.newBuilder(relativeUrl);
+    if (urlBuilder == null) {
+      throw new IllegalArgumentException(
+          &quot;Malformed URL. Base: &quot; + baseUrl + &quot;, Relative: &quot; + relativeUrl);
+    }
+    relativeUrl = null;
+  }
+
+  if (encoded) {
+    urlBuilder.addEncodedQueryParameter(name, value);
+  } else {
+    urlBuilder.addQueryParameter(name, value);
+  }
+}
+</code></pre>
+<h3 id="querymap">@QueryMap</h3>
+<h4 id="使用场景-4">使用场景</h4>
+<p>当接口中的一个 方法有比较多的查询字段时，全部定义到方法中时比较麻烦且容易出错，这个使用我们完全可以将所有的查询参数放到一个Map里面。</p>
+<p>可想而知，其内部实现必定是遍历map ，然后像处理@Query参数一样调用addQueryParam()处理每个查询参数。</p>
+<pre><code>static final class FieldMap&lt;T&gt; extends ParameterHandler&lt;Map&lt;String, T&gt;&gt; {
+  private final Converter&lt;T, String&gt; valueConverter;
+  private final boolean encoded;
+
+  FieldMap(Converter&lt;T, String&gt; valueConverter, boolean encoded) {
+    this.valueConverter = valueConverter;
+    this.encoded = encoded;
+  }
+
+  @Override void apply(RequestBuilder builder, Map&lt;String, T&gt; value) throws IOException {
+    if (value == null) {
+      throw new IllegalArgumentException(&quot;Field map was null.&quot;);
+    }
+
+    for (Map.Entry&lt;String, T&gt; entry : value.entrySet()) {
+      String entryKey = entry.getKey();
+      if (entryKey == null) {
+        throw new IllegalArgumentException(&quot;Field map contained null key.&quot;);
+      }
+      T entryValue = entry.getValue();
+      if (entryValue == null) {
+        throw new IllegalArgumentException(
+            &quot;Field map contained null value for key '&quot; + entryKey + &quot;'.&quot;);
+      }
+      //果然不假
+      builder.addFormField(entryKey, valueConverter.convert(entryValue), encoded);
+    }
+  }
+}
+</code></pre>
+<h3 id="field">@Field</h3>
+<h4 id="使用场景-5">使用场景</h4>
+<p>@Field注解一般用在表单参数的提交上</p>
+<pre><code class="language-java">static final class Field&lt;T&gt; extends ParameterHandler&lt;T&gt; {
+  private final String name; //参数名字
+  private final Converter&lt;T, String&gt; valueConverter; //参数值转换器
+  private final boolean encoded; //是否编码
+
+  Field(String name, Converter&lt;T, String&gt; valueConverter, boolean encoded) {
+    this.name = checkNotNull(name, &quot;name == null&quot;);
+    this.valueConverter = valueConverter;
+    this.encoded = encoded;
+  }
+
+  @Override void apply(RequestBuilder builder, T value) throws IOException {
+    if (value == null) return; // Skip null values. 所以使用@Field修饰的字段，是不会上传到服务器的。
+    //调用ResuestBuilder对象的具体想法来处理@Field修饰的表单字段
+    builder.addFormField(name, valueConverter.convert(value), encoded);
+  }
+}
+</code></pre>
+<pre><code>void addFormField(String name, String value, boolean encoded) {
+//根据参数值是否被编码，调用不同的方法。formBuilder是OKHttp中的一个类。也是使用Builder模式创建的。
+  if (encoded) {
+    formBuilder.addEncoded(name, value);
+  } else {
+    formBuilder.add(name, value);
+  }
+}
+</code></pre>
+<h3 id="fieldmap">@FieldMap</h3>
+<p>@FieldMap</p>
+<h4 id="使用场景-6">使用场景</h4>
+<p>假如表单参数有很多个，我们可以使用一个Map&lt;String,String&gt;来表示，然后使用@FieldMap注解来修饰该参数就行了。可想而知，如同@QueryMap一样，其内部实现肯定是遍历Map，然后像处理@Field参数一样调用</p>
+<p>builder.addFormField(name, valueConverter.convert(value), encoded);</p>
+<h3 id="body">@Body</h3>
+<h4 id="使用场景-7">使用场景</h4>
+<p>在以下需要提交表单的请求里，我们可以使用@Field,@FieldMap,我们还可以使用@Body来修饰我们提交的表单数据，这个时候我们需要定义一个Bean类，Bean类的各个Field必须和表单字段的key一样</p>
+<pre><code class="language-java">static final class Body&lt;T&gt; extends ParameterHandler&lt;T&gt; {
+  private final Converter&lt;T, RequestBody&gt; converter;
+
+  Body(Converter&lt;T, RequestBody&gt; converter) {
+    this.converter = converter;
+  }
+
+  @Override void apply(RequestBuilder builder, T value) {
+    if (value == null) {
+      throw new IllegalArgumentException(&quot;Body parameter value must not be null.&quot;);
+    }
+    RequestBody body;
+    try {
+      body = converter.convert(value);
+    } catch (IOException e) {
+      throw new RuntimeException(&quot;Unable to convert &quot; + value + &quot; to RequestBody&quot;, e);
+    }
+    builder.setBody(body);
+  }
+}
+</code></pre>
+<p>这里Retrofit并没有像@Field一样处理表单参数。仔细想想也对，因为凡是提交的表单数据都需要放到请求体里面，即使使用@Field，@FieldMap提交的数据，最终还是需要放到请求体里面。</p>
+<h3 id="part">@Part</h3>
+<h3 id="rawpart">@RawPart</h3>
+<h3 id="partmap">@PartMap</h3>
+<p>以上三个注解都是使用修饰上传文件的参数的，</p>
+<h3 id="结论">结论</h3>
+<p>从对上面的分析可以知道，我们在提取使用注解修饰的参数后将值存放到RequestBuilder对象里。</p>
+<p>这里又引入了RequestBuilder类</p>
+<h1 id="requestbuilder">RequestBuilder</h1>
+<pre><code class="language-java">final class RequestBuilder {
+  private static final char[] HEX_DIGITS =
+      { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+  private static final String PATH_SEGMENT_ALWAYS_ENCODE_SET = &quot; \&quot;&lt;&gt;^`{}|\\?#&quot;;
+
+  private final String method; //方法类型
+
+  private final HttpUrl baseUrl; //scheme+host
+  private String relativeUrl; 	//相对路径
+  private HttpUrl.Builder urlBuilder; //URL构造器
+
+  private final Request.Builder requestBuilder; //OkHttp中Request构造器
+  private MediaType contentType;		//提交表单的数据类型
+
+  private final boolean hasBody;		//是否有请求体
+  private MultipartBody.Builder multipartBuilder; //上传文件的构造器
+  private FormBody.Builder formBuilder;				//表单数据的构造器
+  private RequestBody body;							//请求体
+
+  RequestBuilder(String method, HttpUrl baseUrl, String relativeUrl, Headers headers,
+      MediaType contentType, boolean hasBody, boolean isFormEncoded, boolean isMultipart) {
+    this.method = method;
+    this.baseUrl = baseUrl;
+    this.relativeUrl = relativeUrl;
+    this.requestBuilder = new Request.Builder();
+    this.contentType = contentType;
+    this.hasBody = hasBody;
+
+    if (headers != null) {
+      requestBuilder.headers(headers);
+    }
+
+    if (isFormEncoded) {
+      // Will be set to 'body' in 'build'.
+      formBuilder = new FormBody.Builder();
+    } else if (isMultipart) {
+      // Will be set to 'body' in 'build'.
+      multipartBuilder = new MultipartBody.Builder();
+      multipartBuilder.setType(MultipartBody.FORM);
+    }
+  }
+
+  void setRelativeUrl(Object relativeUrl) {
+    if (relativeUrl == null) throw new NullPointerException(&quot;@Url parameter is null.&quot;);
+    this.relativeUrl = relativeUrl.toString();
+  }
+
+  void addHeader(String name, String value) {
+    if (&quot;Content-Type&quot;.equalsIgnoreCase(name)) {
+      MediaType type = MediaType.parse(value);
+      if (type == null) {
+        throw new IllegalArgumentException(&quot;Malformed content type: &quot; + value);
+      }
+      contentType = type;
+    } else {
+      requestBuilder.addHeader(name, value);
+    }
+  }
+
+  void addPathParam(String name, String value, boolean encoded) {
+    if (relativeUrl == null) {
+      // The relative URL is cleared when the first query parameter is set.
+      throw new AssertionError();
+    }
+    relativeUrl = relativeUrl.replace(&quot;{&quot; + name + &quot;}&quot;, canonicalizeForPath(value, encoded));
+  }
+
+  private static String canonicalizeForPath(String input, boolean alreadyEncoded) {
+    int codePoint;
+    for (int i = 0, limit = input.length(); i &lt; limit; i += Character.charCount(codePoint)) {
+      codePoint = input.codePointAt(i);
+      if (codePoint &lt; 0x20 || codePoint &gt;= 0x7f
+          || PATH_SEGMENT_ALWAYS_ENCODE_SET.indexOf(codePoint) != -1
+          || (!alreadyEncoded &amp;&amp; (codePoint == '/' || codePoint == '%'))) {
+        // Slow path: the character at i requires encoding!
+        Buffer out = new Buffer();
+        out.writeUtf8(input, 0, i);
+        canonicalizeForPath(out, input, i, limit, alreadyEncoded);
+        return out.readUtf8();
+      }
+    }
+
+    // Fast path: no characters required encoding.
+    return input;
+  }
+
+  private static void canonicalizeForPath(Buffer out, String input, int pos, int limit,
+      boolean alreadyEncoded) {
+    Buffer utf8Buffer = null; // Lazily allocated.
+    int codePoint;
+    for (int i = pos; i &lt; limit; i += Character.charCount(codePoint)) {
+      codePoint = input.codePointAt(i);
+      if (alreadyEncoded
+          &amp;&amp; (codePoint == '\t' || codePoint == '\n' || codePoint == '\f' || codePoint == '\r')) {
+        // Skip this character.
+      } else if (codePoint &lt; 0x20 || codePoint &gt;= 0x7f
+          || PATH_SEGMENT_ALWAYS_ENCODE_SET.indexOf(codePoint) != -1
+          || (!alreadyEncoded &amp;&amp; (codePoint == '/' || codePoint == '%'))) {
+        // Percent encode this character.
+        if (utf8Buffer == null) {
+          utf8Buffer = new Buffer();
+        }
+        utf8Buffer.writeUtf8CodePoint(codePoint);
+        while (!utf8Buffer.exhausted()) {
+          int b = utf8Buffer.readByte() &amp; 0xff;
+          out.writeByte('%');
+          out.writeByte(HEX_DIGITS[(b &gt;&gt; 4) &amp; 0xf]);
+          out.writeByte(HEX_DIGITS[b &amp; 0xf]);
+        }
+      } else {
+        // This character doesn't need encoding. Just copy it over.
+        out.writeUtf8CodePoint(codePoint);
+      }
+    }
+  }
+
+  void addQueryParam(String name, String value, boolean encoded) {
+    if (relativeUrl != null) {
+      // Do a one-time combination of the built relative URL and the base URL.
+      urlBuilder = baseUrl.newBuilder(relativeUrl);
+      if (urlBuilder == null) {
+        throw new IllegalArgumentException(
+            &quot;Malformed URL. Base: &quot; + baseUrl + &quot;, Relative: &quot; + relativeUrl);
+      }
+      relativeUrl = null;
+    }
+
+    if (encoded) {
+      urlBuilder.addEncodedQueryParameter(name, value);
+    } else {
+      urlBuilder.addQueryParameter(name, value);
+    }
+  }
+
+  void addFormField(String name, String value, boolean encoded) {
+    if (encoded) {
+      formBuilder.addEncoded(name, value);
+    } else {
+      formBuilder.add(name, value);
+    }
+  }
+
+  void addPart(Headers headers, RequestBody body) {
+    multipartBuilder.addPart(headers, body);
+  }
+
+  void addPart(MultipartBody.Part part) {
+    multipartBuilder.addPart(part);
+  }
+
+  void setBody(RequestBody body) {
+    this.body = body;
+  }
+
+  Request build() {
+    HttpUrl url;
+    HttpUrl.Builder urlBuilder = this.urlBuilder;
+    if (urlBuilder != null) {
+      url = urlBuilder.build();
+    } else {
+      // No query parameters triggered builder creation, just combine the relative URL and base URL.
+      url = baseUrl.resolve(relativeUrl);
+      if (url == null) {
+        throw new IllegalArgumentException(
+            &quot;Malformed URL. Base: &quot; + baseUrl + &quot;, Relative: &quot; + relativeUrl);
+      }
+    }
+
+    RequestBody body = this.body;
+    if (body == null) {
+      // Try to pull from one of the builders.
+      if (formBuilder != null) {
+        body = formBuilder.build();
+      } else if (multipartBuilder != null) {
+        body = multipartBuilder.build();
+      } else if (hasBody) {
+        // Body is absent, make an empty body.
+        body = RequestBody.create(null, new byte[0]);
+      }
+    }
+
+    MediaType contentType = this.contentType;
+    if (contentType != null) {
+      if (body != null) {
+        body = new ContentTypeOverridingRequestBody(body, contentType);
+      } else {
+        requestBuilder.addHeader(&quot;Content-Type&quot;, contentType.toString());
+      }
+    }
+
+    //生成一个Request对象
+    return requestBuilder
+        .url(url)
+        .method(method, body)
+        .build();
+  }
+
+  private static class ContentTypeOverridingRequestBody extends RequestBody {
+    private final RequestBody delegate;
+    private final MediaType contentType;
+
+    ContentTypeOverridingRequestBody(RequestBody delegate, MediaType contentType) {
+      this.delegate = delegate;
+      this.contentType = contentType;
+    }
+
+    @Override public MediaType contentType() {
+      return contentType;
+    }
+
+    @Override public long contentLength() throws IOException {
+      return delegate.contentLength();
+    }
+
+    @Override public void writeTo(BufferedSink sink) throws IOException {
+      delegate.writeTo(sink);
+    }
+  }
+}
+</code></pre>
+<h1 id="okhttpcall">OkHttpCall</h1>
+<pre><code class="language-java">OkHttpCall okHttpCall = new OkHttpCall&lt;&gt;(serviceMethod, args);
+</code></pre>
+<p>在创建了ServiceMethod对象后，使用该ServiceMethod对象和其参数创建一个OKHttPCall对象</p>
+<pre><code class="language-java">OkHttpCall okHttpCall = new OkHttpCall&lt;&gt;(serviceMethod, args);
+</code></pre>
+<p>在合适的时候调用ServiceMethod对象的toRequest方法生成一个Request对象，toReques()的内部实现就是调用RequestBuilder对象的build方法。</p>
+<pre><code>/** Builds an HTTP request from method arguments. */
+Request toRequest(Object... args) throws IOException {
+  RequestBuilder requestBuilder = new RequestBuilder(httpMethod, baseUrl, relativeUrl, headers,
+      contentType, hasBody, isFormEncoded, isMultipart);
+
+  @SuppressWarnings(&quot;unchecked&quot;) // It is an error to invoke a method with the wrong arg types.
+  ParameterHandler&lt;Object&gt;[] handlers = (ParameterHandler&lt;Object&gt;[]) parameterHandlers;
+
+  int argumentCount = args != null ? args.length : 0;
+  if (argumentCount != handlers.length) {
+    throw new IllegalArgumentException(&quot;Argument count (&quot; + argumentCount
+        + &quot;) doesn't match expected count (&quot; + handlers.length + &quot;)&quot;);
+  }
+
+  for (int p = 0; p &lt; argumentCount; p++) {
+    handlers[p].apply(requestBuilder, args[p]);
+  }
+
+  return requestBuilder.build();
+}
+</code></pre>
+<p>OkHttpCall 实现了Call接口，这个Call接口和OkHttp中的Call接口一样，毕竟一家公司嘛。</p>
+<p>其实就是对OkHttpCall 做了一层包装。</p>
+<p>最后方法的执行时通过调用</p>
+<pre><code>return serviceMethod.callAdapter.adapt(okHttpCall);
+</code></pre>
+<p>返回接口中方法定义的返回值。</p>
+<p>这块的流程就是构造一个OKHttp对象需要使用ServiceMethod对象和相应的参数。</p>
+<pre><code>OkHttpCall okHttpCall = new OkHttpCall&lt;&gt;(serviceMethod, args);
+</code></pre>
+<p>最后创建具体的Call对象时</p>
+<pre><code class="language-java">private okhttp3.Call createRawCall() throws IOException {
+  Request request = serviceMethod.toRequest(args);
+  okhttp3.Call call = serviceMethod.callFactory.newCall(request);
+  if (call == null) {
+    throw new NullPointerException(&quot;Call.Factory returned null.&quot;);
+  }
+  return call;
+}
+</code></pre>
+<p>调用了ServiceMethod对象的toRequest方法，然后使用这个request对象创建了一个Call对象。</p>
+<pre><code class="language-java">/** Builds an HTTP request from method arguments. */
+Request toRequest(Object... args) throws IOException {
+  RequestBuilder requestBuilder = new RequestBuilder(httpMethod, baseUrl, relativeUrl, headers,
+      contentType, hasBody, isFormEncoded, isMultipart);
+
+  @SuppressWarnings(&quot;unchecked&quot;) // It is an error to invoke a method with the wrong arg types.
+  ParameterHandler&lt;Object&gt;[] handlers = (ParameterHandler&lt;Object&gt;[]) parameterHandlers;
+
+  int argumentCount = args != null ? args.length : 0;
+  if (argumentCount != handlers.length) {
+    throw new IllegalArgumentException(&quot;Argument count (&quot; + argumentCount
+        + &quot;) doesn't match expected count (&quot; + handlers.length + &quot;)&quot;);
+  }
+
+  for (int p = 0; p &lt; argumentCount; p++) {
+    handlers[p].apply(requestBuilder, args[p]);
+  }
+//生成一个Request对象
+  return requestBuilder.build();
+}
+</code></pre>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[OkHttp 源码分析]]></title>
@@ -44,6 +2432,242 @@
         <link href="https://philadelphia.github.io/post/okhttp-yuan-ma-fen-xi">
         </link>
         <updated>2019-08-16T10:05:29.000Z</updated>
+        <content type="html"><![CDATA[<p>OkHttp 源码分析</p>
+<p>基于OkHttp3.11.0</p>
+<pre><code>implementation(&quot;com.squareup.okhttp3:okhttp:3.11.0&quot;)
+</code></pre>
+<p>网络框架的核心思想都是构建基本的执行单元之后(1)，根据任务类型放入对应的任务队列里(2)，再由线程池去执行(3)。OKHttp也不列外。</p>
+<h1 id="初始化okhttpclient">初始化OKHttpClient</h1>
+<p>OKHttpclient采用了Builder模式创建</p>
+<pre><code class="language-java">OkHttpClient okHttpClient = new OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .writeTimeout(5, TimeUnit.SECONDS)
+        .build();
+</code></pre>
+<h1 id="构建执行单元">构建执行单元</h1>
+<h2 id="1get请求">1：GET请求</h2>
+<pre><code class="language-java">Request request = new Request.Builder().url(&quot;www.baidu.com&quot;)
+        .get() // 默认就是get请求
+        .build();
+</code></pre>
+<h2 id="2-post请求">2: POST请求</h2>
+<p>POST与GET多了一个body。</p>
+<pre><code class="language-java">FormBody body = new FormBody.Builder()
+        .add(&quot;key&quot;, &quot;value&quot;)
+        .add(&quot;key1&quot;, &quot;value1&quot;)
+        .build();
+
+Request post = new Request.Builder().url(&quot;www.baidu.com&quot;)
+        .post(body)
+        .build();
+</code></pre>
+<h1 id="执行">执行</h1>
+<h2 id="1同步执行">1：同步执行</h2>
+<pre><code class="language-Java">try {
+    Response response = okHttpClient.newCall(post).execute();
+    if (response.code() ==  200){
+     	 }
+
+} catch (IOException e) {
+
+}
+</code></pre>
+<p>然后就可以根据response的结果操作了。</p>
+<h2 id="2异步执行">2：异步执行</h2>
+<pre><code class="language-java">okHttpClient.newCall(request).enqueue(new Callback() {
+    @Override
+    public void onFailure(Call call, IOException e) {
+        
+    }
+
+    @Override
+    public void onResponse(Call call, Response response) throws IOException {
+
+    }
+});
+</code></pre>
+<p>在对应的回调函数里做对应的业务逻辑。</p>
+<p>以上就是OKHttp的使用的基本使用。</p>
+<p>这里Request就是请求单元,不论是同步执行还是异步执行，都调用okHttpClient.newCall(request) 生成了一个RealCall对象，然后分别调用该对象的execute(同步执行)方法或者enqueue(异步执行)方法。</p>
+<pre><code class="language-Java">@Override public Call newCall(Request request) {
+  return RealCall.newRealCall(this, request, false /* for web socket */);
+}
+</code></pre>
+<p>OKHttp的newCall方法调用RealCall的静态方法newRealCall().</p>
+<pre><code class="language-Java">static RealCall newRealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
+  // Safely publish the Call instance to the EventListener.
+  RealCall call = new RealCall(client, originalRequest, forWebSocket);
+  call.eventListener = client.eventListenerFactory().create(call);
+  return call;
+}
+</code></pre>
+<pre><code class="language-Java">private RealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
+  this.client = client;
+  this.originalRequest = originalRequest;
+  this.forWebSocket = forWebSocket;
+  this.retryAndFollowUpInterceptor = new RetryAndFollowUpInterceptor(client, forWebSocket);
+}
+</code></pre>
+<p>可以看到，newRealCall方法将client作为自己构造函数的参数传入</p>
+<p>下面这个方法是RealCall对象的execute方法</p>
+<pre><code>@Override public Response execute() throws IOException {
+  synchronized (this) {
+    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
+    executed = true;
+  }
+  captureCallStackTrace();
+  eventListener.callStart(this);
+  try {
+    client.dispatcher().executed(this);
+    Response result = getResponseWithInterceptorChain();
+    if (result == null) throw new IOException(&quot;Canceled&quot;);
+    return result;
+  } catch (IOException e) {
+    eventListener.callFailed(this, e);
+    throw e;
+  } finally {
+    client.dispatcher().finished(this);
+  }
+}
+</code></pre>
+<p>可以看到调用了 client.dispatcher().executed(this);</p>
+<p>最中调用 Response result = getResponseWithInterceptorChain();并返回Result对象</p>
+<p>如果发生了异常则调用    eventListener.callFailed(this, e);</p>
+<p>而最终这会调用    client.dispatcher().finished(this)，来结束这个call。</p>
+<p>这里面有一个很重要的类Dispatcher，它是OKHttpclient的一个内部成员，同时OKHttpclient是request的内部成员</p>
+<pre><code class="language-java">public final class Dispatcher {
+      private int maxRequests = 64;  //最大的请求数量
+      private int maxRequestsPerHost = 5; //同义主机同时支持的最大请求数
+      private @Nullable Runnable idleCallback;
+
+      /** Executes calls. Created lazily. */
+      private @Nullable ExecutorService executorService;
+
+      /** Ready async calls in the order they'll be run. */
+      private final Deque&lt;AsyncCall&gt; readyAsyncCalls = new ArrayDeque&lt;&gt;();//准备执行的异步任务队列
+
+      /** Running asynchronous calls. Includes canceled calls that haven't finished yet. */
+      private final Deque&lt;AsyncCall&gt; runningAsyncCalls = new ArrayDeque&lt;&gt;(); //正在执行的异步任务队列
+
+      /** Running synchronous calls. Includes canceled calls that haven't finished yet. */
+      private final Deque&lt;RealCall&gt; runningSyncCalls = new ArrayDeque&lt;&gt;(); //正在运行的同步任务队列
+  
+  }
+</code></pre>
+<p>分别看到，这个类的同步执行方法是</p>
+<pre><code>synchronized void executed(RealCall call) {
+  runningSyncCalls.add(call);
+}
+</code></pre>
+<p>将改call假如同步执行队列中。</p>
+<pre><code>synchronized void enqueue(AsyncCall call) {
+  if (runningAsyncCalls.size() &lt; maxRequests &amp;&amp; runningCallsForHost(call) &lt; maxRequestsPerHost) {
+    runningAsyncCalls.add(call);
+    executorService().execute(call);
+  } else {
+    readyAsyncCalls.add(call);
+  }
+}
+</code></pre>
+<p>异步执行方法是先进行判断，只有正在执行的异步任务队列长度小于了最大的请求数并且改请求的主机的正在请求数量小于每个主句的同时的最大连接数世才将改请求加入到正在执行的异步任务队列里，然后由具体的执行任务来执行这个请求任务。</p>
+<p>不然就把这个任务加入到待执行的异步执行队队列。</p>
+<p>这里RealCall 对象突然就变成了一个AsyncCall对象</p>
+<pre><code class="language-Java">@Override public void enqueue(Callback responseCallback) {
+  synchronized (this) {
+    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
+    executed = true;
+  }
+  captureCallStackTrace();
+  eventListener.callStart(this);
+  client.dispatcher().enqueue(new AsyncCall(responseCallback));
+}
+</code></pre>
+<p>在RealCall执行enqueue方法时将一个回调对象作为构造参数生成了一个AsyncCall对象，传入了Dispatcher的enqueue方法。</p>
+<pre><code class="language-java">final class AsyncCall extends NamedRunnable {
+      private final Callback responseCallback;
+
+      AsyncCall(Callback responseCallback) {
+        super(&quot;OkHttp %s&quot;, redactedUrl());
+        this.responseCallback = responseCallback;
+      }
+  }
+</code></pre>
+<p>Async对象其实继承了NamedRunnable。而NamedRunnable实现了Runnable接口，可以看出其实Async其实就是一个命名后的runnable对象。</p>
+<p>这里把RealCall同步执行和异步执行的代码列出来</p>
+<p>1：同步执行</p>
+<pre><code class="language-Java">@Override public Response execute() throws IOException {
+  synchronized (this) {
+    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
+    executed = true;
+  }
+  captureCallStackTrace();
+  eventListener.callStart(this);
+  try {
+    client.dispatcher().executed(this);
+    Response result = getResponseWithInterceptorChain();
+    if (result == null) throw new IOException(&quot;Canceled&quot;);
+    return result;
+  } catch (IOException e) {
+    eventListener.callFailed(this, e);
+    throw e;
+  } finally {
+    client.dispatcher().finished(this);
+  }
+}
+</code></pre>
+<p>2：异步执行</p>
+<p>最终调用AsyncCall对象的execute方法</p>
+<pre><code>@Override protected void execute() {
+    boolean signalledCallback = false;
+    try {
+      Response response = getResponseWithInterceptorChain();
+      if (retryAndFollowUpInterceptor.isCanceled()) {
+        signalledCallback = true;
+        responseCallback.onFailure(RealCall.this, new IOException(&quot;Canceled&quot;));
+      } else {
+        signalledCallback = true;
+        responseCallback.onResponse(RealCall.this, response);
+      }
+    } catch (IOException e) {
+      if (signalledCallback) {
+        // Do not signal the callback twice!
+        Platform.get().log(INFO, &quot;Callback failure for &quot; + toLoggableString(), e);
+      } else {
+        eventListener.callFailed(RealCall.this, e);
+        responseCallback.onFailure(RealCall.this, e);
+      }
+    } finally {
+      client.dispatcher().finished(this);
+    }
+  }
+}
+</code></pre>
+<p>可以看出不管是同步执行还是异步执行，最终都是调用getResponseWithInterceptorChain();</p>
+<p>方法得出Response</p>
+<pre><code class="language-Java">Response getResponseWithInterceptorChain() throws IOException {
+  // Build a full stack of interceptors.
+  List&lt;Interceptor&gt; interceptors = new ArrayList&lt;&gt;();
+  interceptors.addAll(client.interceptors());
+  interceptors.add(retryAndFollowUpInterceptor);
+  interceptors.add(new BridgeInterceptor(client.cookieJar()));
+  interceptors.add(new CacheInterceptor(client.internalCache()));
+  interceptors.add(new ConnectInterceptor(client));
+  if (!forWebSocket) {
+    interceptors.addAll(client.networkInterceptors());
+  }
+  interceptors.add(new CallServerInterceptor(forWebSocket));
+
+  Interceptor.Chain chain = new RealInterceptorChain(interceptors, null, null, null, 0,
+      originalRequest, this, eventListener, client.connectTimeoutMillis(),
+      client.readTimeoutMillis(), client.writeTimeoutMillis());
+
+  return chain.proceed(originalRequest);
+}
+</code></pre>
+<p>在这个方法里首先将用户添加到OKHttpClient上的应用拦截器添加到拦截器列表里。然后一次添加重试重定向拦截器, 头部信息处理拦截器，缓存拦截器， 连接拦截器，然后再加上OKhttpclient配置的网络拦截器，最后添加最终发起请求的拦截器。</p>
+<p>拦截器这里使用了不完整的责任链模式，依次处理返回的response，最后返回最终的response。</p>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[Java:动态绑定]]></title>
@@ -51,6 +2675,98 @@
         <link href="https://philadelphia.github.io/post/javadong-tai-bang-ding">
         </link>
         <updated>2019-08-16T10:03:39.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="动态绑定">动态绑定</h2>
+<p>动态绑定作为Java多态特性的一个重要实现</p>
+<p>有一下三个类：</p>
+<pre><code class="language-java">public class Fruit {
+    public static final String TAG = &quot;Fruit&quot;;
+
+    public Fruit() {
+    }
+
+    public void say() {
+        Log.i(TAG, &quot;say: i am fruit: &quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-java">public class Apple  extends  Fruit{
+
+    public void say(){
+        Log.i(TAG, &quot;say:  i am apple&quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-java">
+public class Orange extends Fruit {
+
+    public void say(){
+        Log.i(TAG, &quot;say:  i am orange&quot;);
+    }
+}
+</code></pre>
+<p>其中Apple和Orange类都继承Fruit类。</p>
+<p>然后在使用的时候</p>
+<pre><code class="language-java">Fruit fruit = new Apple();
+fruit.say();
+</code></pre>
+<p>我们都知道最后打印的结果是</p>
+<pre><code class="language-java">debug I/Fruit: say:  i am apple
+</code></pre>
+<p>很明显这就是Java多态特性的体现。</p>
+<p>我们明明调用的是Fruit对象的方法。但是运行时却调用了Apple对象的方法，这是怎么实现的呢，这就涉及到了Java的动态绑定了，</p>
+<p>这里确定两个概念：编译时类型与运行时类型</p>
+<p>编译时类型就是指改对象在编译后的文件里的类型也就是改对象声明时的类型，而运行时类型是指在程序运行时动态指定的类型也就是该对象定义时的类型。如果编译时类型与运行时类型不一致就会发生运行时动态绑定</p>
+<p>比如上面定义的Fruit fruit = new Apple();</p>
+<p>fruit的编译时类型是Fruit。</p>
+<p>我们可以从编译后的class文件看出</p>
+<pre><code class="language-java">#4 = Class              #243          // com/meiliwu/dragon/model/Apple
+#5 = Methodref          #4.#241       // com/meiliwu/dragon/model/Apple.&quot;&lt;init&gt;&quot;:()V
+#6 = Methodref          #244.#245     // com/meiliwu/dragon/model/Fruit.say:()V
+</code></pre>
+<p>我们可以从编译后的文件看出。fruit.say方法在编译后指向的是Fruit的say方法。但是运行时类型是Apple。运行时却是调用Apple的say方法。我们从日志可以看出来。</p>
+<p>如果我们将代码改成这样</p>
+<pre><code class="language-java">Apple fruit = new Apple();
+fruit.say();
+</code></pre>
+<p>打印日志如下：</p>
+<pre><code class="language-Java">12-25 11:25:17.803 9709-9709/com.meiliwu.dragon.debug I/Fruit: say:  i am apple
+</code></pre>
+<p>我们再看看编译后的文件</p>
+<pre><code class="language-java">4 = Class              #243          // com/meiliwu/dragon/model/Apple
+#5 = Methodref          #4.#241       // com/meiliwu/dragon/model/Apple.&quot;&lt;init&gt;&quot;:()V
+#6 = Methodref          #4.#244       // com/meiliwu/dragon/model/Apple.say:()V
+</code></pre>
+<p>从代码可以看出编译时类型与运行时类型一致，这是不会发生动态绑定的，这时可以从编译后的class文件得出验证。</p>
+<h2 id="java的pecs原则">JAVA的PECS原则</h2>
+<p>PECS指“Producer Extends，Consumer Super”</p>
+<p>比如：</p>
+<pre><code class="language-java">List&lt;? extends Fruit&gt; fruitList = new ArrayList&lt;&gt;();
+fruitList.add(new Apple());
+fruitList.add(new Orange());
+</code></pre>
+<p>但是编译器却报了编译错误：</p>
+<p>按理说fruitList是一个持有类型为Fruit及其子类的泛型列表啊，为什么不能往其中添加Fruit的子类呢？</p>
+<p>因为泛型的一大好处就是可以在编译时检查，避免传入不相符的类型可能导致的ClassCastException了。但是声明fruitList的时候没有明确的指定泛型的具体类型，所以编译器无法确认其持有的具体类型，当然也就拒绝了add操作。</p>
+<p>fruitList只是规定了泛型的上限，但是并没有确定具体的类型，也无法确定具体的子类型，可以是Apple，Orange还可能是Banana,所以不能把具体的对象添加进去，不然使用的时候可能导致ClassCastException了。但是可以保证从里面取出来的数据都是Fruit及其子类，而且还是Fruit的某一个子类。</p>
+<p>我们把代码改成下面这样子就可以添加不同的Fruit对象了。</p>
+<p>因为我们规定了fruitList持有的都是Fruit及其父类，可以将Fruit 及其子类都添加进去</p>
+<pre><code class="language-java">List&lt;? super Fruit&gt; fruitList = new ArrayList&lt;&gt;();
+fruitList.add(new Apple());
+fruitList.add(new Orange());
+</code></pre>
+<p>但是</p>
+<pre><code class="language-Java">fruitList.add(new Object());
+</code></pre>
+<p>却不行，why?因为在编译时无法确认具体的fruitList持有的是Fruit的哪一个父类，要想确定就不能用泛型了。所以就无法往里面写入Fruit的父类型对象。</p>
+<p>所以我们可以从Java Collctions copy方法的签名可以看出</p>
+<pre><code class="language-Java">public static &lt;T&gt; void copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src) {
+</code></pre>
+<p>dest集合持有？super T ，可以往里面写入所有T及其子类对象，而src集合持有？ extends T泛型。可以确保的是从里面读取的数据都是T及其子类。所以可以写入dest了。</p>
+<p>PS:Java 类的final方法和static不能复写</p>
+<h2 id="reference">Reference</h2>
+<p>1：https://www.cnblogs.com/ygj0930/p/6554103.html</p>
+<p>2:  http://www.importnew.com/8966.html</p>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[Android中Activity数据的保存和恢复 ]]></title>
@@ -58,6 +2774,216 @@
         <link href="https://philadelphia.github.io/post/android-zhong-activity-shu-ju-de-bao-cun-he-hui-fu">
         </link>
         <updated>2019-08-16T10:03:02.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="android中activity数据的保存和恢复">Android中Activity数据的保存和恢复</h1>
+<p>在我们的APP使用的过程中，总有可能出现各种手滑、被压在后台、甚至突然被杀死的情况。所以对APP中一些临时数据或关键持久型数据，就需要我们使用正确的方式进行保存或恢复。</p>
+<p>突发情况都有哪些？</p>
+<p>因为本文讨论的是当一些突发情况的出现时，对数据的保存和恢复。所以现在总结一下突发情况应该都有哪些？</p>
+<pre><code>1. 点击back键
+2. 点击锁屏键
+3. 点击home键
+4. 其他APP进入前台
+5. 启动了另一个Activity
+6. 屏幕方向旋转
+7. APP被Kill
+</code></pre>
+<h2 id=""></h2>
+<p>现在我们创建一个Activity并复写其中的关键方法：<br>
+​	<br>
+package com.example.activitytest;</p>
+<pre><code>	import android.content.Intent;
+	import android.os.Bundle;
+	import android.support.v7.app.AppCompatActivity;
+	import android.util.Log;
+	import android.widget.Button;
+	
+	import butterknife.BindView;
+	import butterknife.ButterKnife;
+	import butterknife.OnClick;
+	
+	public class MainActivity extends AppCompatActivity {
+</code></pre>
+<p>​	<br>
+@BindView(R.id.btn_secondActivity)<br>
+Button btnSecondActivity;<br>
+private static final String TAG = &quot;MainActivity&quot;;</p>
+<pre><code>    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        Log.i(TAG, &quot;onCreate: &quot;);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.i(TAG, &quot;onRestart: &quot;);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.i(TAG, &quot;onStart: &quot;);
+    }
+
+    @Override
+    protected void onResume() {
+        Log.i(TAG, &quot;onResume: &quot;);
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i(TAG, &quot;onPause: &quot;);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.i(TAG, &quot;onStop: &quot;);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, &quot;onDestroy: &quot;);
+    }
+
+    @OnClick(R.id.btn_secondActivity)
+    public void onViewClicked() {
+        startActivity(new Intent(MainActivity.this, SecondActivity.class));
+    }
+</code></pre>
+<p>​	<br>
+@Override<br>
+protected void onSaveInstanceState(Bundle outState) {<br>
+Log.i(TAG, &quot;onSaveInstanceState: &quot;);<br>
+super.onSaveInstanceState(outState);<br>
+}</p>
+<pre><code>    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        Log.i(TAG, &quot;onRestoreInstanceState: &quot;);
+    }
+
+}
+</code></pre>
+<p>来看看各种情况下，Activity会调用哪些方法。</p>
+<ol>
+<li>
+<p>点击back键</p>
+<pre><code>09-26 16:00:02.124 21636-21636/com.example.activitytest I/MainActivity: onPause: 
+
+09-26 16:00:02.575 21636-21636/com.example.activitytest I/MainActivity: onStop: 
+09-26 16:00:02.575 21636-21636/com.example.activitytest I/MainActivity: onDestroy: 
+</code></pre>
+</li>
+<li>
+<p>点击锁屏键<br>
+​	<br>
+09-26 16:02:14.453 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:02:14.497 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+​	09-26 16:02:14.498 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+<li>
+<p>点击home键<br>
+​	<br>
+09-26 16:02:54.239 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:02:54.306 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+09-26 16:02:54.355 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+<li>
+<p>其他APP进入前台<br>
+​	<br>
+09-26 16:04:02.658 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:04:03.159 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+​	09-26 16:04:03.159 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+<li>
+<p>启动了另一个Activity</p>
+<p>09-26 16:04:02.658 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:04:03.159 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+​	09-26 16:04:03.159 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+<li>
+<p>屏幕方向旋转</p>
+<p>​</p>
+<pre><code class="language-java">09-26 16:04:51.199 21636-21636/com.example.activitytest I/MainActivity: onPause: 
+09-26 16:04:51.199 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState: 
+09-26 16:04:51.201 21636-21636/com.example.activitytest I/MainActivity: onStop: 
+09-26 16:04:51.201 21636-21636/com.example.activitytest I/MainActivity: onDestroy: 
+09-26 16:04:51.220 21636-21636/com.example.activitytest I/MainActivity: onCreate: 
+09-26 16:04:51.250 21636-21636/com.example.activitytest I/MainActivity: onStart: 
+09-26 16:04:51.250 21636-21636/com.example.activitytest I/MainActivity: 
+</code></pre>
+<p>onRestoreInstanceState:<br>
+​	09-26 16:04:51.252 21636-21636/com.example.activitytest I/MainActivity: onResume:</p>
+</li>
+<li>
+<p>APP被Kill<br>
+​	<br>
+09-26 16:05:17.544 21636-21636/com.example.activitytest I/MainActivity: onPause:<br>
+​	09-26 16:05:17.601 21636-21636/com.example.activitytest I/MainActivity: onSaveInstanceState:<br>
+​	09-26 16:05:17.611 21636-21636/com.example.activitytest I/MainActivity: onStop:</p>
+</li>
+</ol>
+<p>当APP处在前台，能与用户交互的情况下，出现上述的突发事件时，只有点击back键，onSaveInstanceState方法不会调用。其余的情况下， 该方法一律都会调用，并且onPause方法是必然会调用的.<br>
+我们可以看一下onSaveInstanceState()方法的注释<br>
+​	<br>
+/**<br>
+* Called to retrieve per-instance state from an activity before being killed<br>
+* so that the state can be restored in {@link #onCreate} or<br>
+* {@link #onRestoreInstanceState} (the {@link Bundle} populated by this method<br>
+* will be passed to both).<br>
+*<br>
+* <p>This method is called before an activity may be killed so that when it<br>
+* comes back some time in the future it can restore its state.  For example,<br>
+* if activity B is launched in front of activity A, and at some point activity<br>
+* A is killed to reclaim resources, activity A will have a chance to save the<br>
+* current state of its user interface via this method so that when the user<br>
+* returns to activity A, the state of the user interface can be restored<br>
+* via {@link #onCreate} or {@link #onRestoreInstanceState}.<br>
+*<br>
+* <p>Do not confuse this method with activity lifecycle callbacks such as<br>
+* {@link #onPause}, which is always called when an activity is being placed<br>
+* in the background or on its way to destruction, or {@link #onStop} which<br>
+* is called before destruction.  One example of when {@link #onPause} and<br>
+* {@link #onStop} is called and not this method is when a user navigates back<br>
+* from activity B to activity A: there is no need to call {@link #onSaveInstanceState}<br>
+* on B because that particular instance will never be restored, so the<br>
+* system avoids calling it.  An example when {@link #onPause} is called and<br>
+* not {@link #onSaveInstanceState} is when activity B is launched in front of activity A:<br>
+* the system may avoid calling {@link #onSaveInstanceState} on activity A if it isn't<br>
+* killed during the lifetime of B since the state of the user interface of<br>
+* A will stay intact.<br>
+*<br>
+* <p>The default implementation takes care of most of the UI per-instance<br>
+* state for you by calling {@link android.view.View#onSaveInstanceState()} on each<br>
+* view in the hierarchy that has an id, and by saving the id of the currently<br>
+* focused view (all of which is restored by the default implementation of<br>
+* {@link #onRestoreInstanceState}).  If you override this method to save additional<br>
+* information not captured by each individual view, you will likely want to<br>
+* call through to the default implementation, otherwise be prepared to save<br>
+* all of the state of each view yourself.<br>
+*<br>
+* <p>If called, this method will occur before {@link #onStop}.  There are<br>
+* no guarantees about whether it will occur before or after {@link #onPause}.<br>
+*<br>
+* @param outState Bundle in which to place your saved state.<br>
+* 这个方法在Activity被Killed之前调用去保存Activity的每个实体的状态，所以状态可以在<code>onCreat 	 * 或者</code>onRestoreInstanceState<code>被恢复。通过这个方法传递过去的</code>Bundle<code>* 这个方法在一个Activity被killed之前调用，所以当它将来恢复时可以恢复它的状态。比如：如果Activity B 	 * 在Acitivity A之前入站。如果在某一时刻A被销毁去释放资源，那么A将有机会调用该方法去保存它的用户UI的状态。 	 * 因此，当用户返回A时。用户状态可以被恢复。 	 * 不要将这个方法和Activity的生命周期回掉比如</code>onPause<code>，</code>onPause<code>在Activity被取代或者销毁时调用。</code>onStop<code>在被销毁之前 	 * 调用。一个</code>onPause<code>和</code>onStop<code>被调用但是</code>onSaveInstanceState<code>没被调用的情况是当用户从B回退到A时。不需要调用B的 	 *</code>onSaveInstanceState<code>* 一个</code>onPause<code>被调用但是</code>onSaveInstanceState<code>没被Blaunch 在A的上面时。系统避免调用A的</code>onSaveInstanceState<code>* 如果A在B的生命周期内没有被销毁。所以A的用户状态将保持不变。 	 * 可以通过给View设置ID。可以自动保存每个View的状态。 	 * 如果这个方法被调用了。这个方法将在</code>onStop<code>之前调用。但是不保证和</code>onPause`的调用顺序。<br>
+*</p>
+<p>google工程师们对onSaveInstanceState如此设计就是让其完成对一些临时的、非永久数据存储并进行恢复。但是一些永久性质的数据，比如插入数据库的操作，我们应该在什么方法中对其进行保存呢？</p>
+<pre><code>onPause
+onPuase的解释是：onPause(), onStop(), onDestroy() are &quot;killable after&quot; lifecycle methods. This indicates whether or not the system can kill the process hosting the activity at any time after the method returns, without executing another line of the activity's code. Because onPause() is the first of the three, once the activity is created, onPause() is the last method that's guaranteed to be called before the process can be killed—if the system must recover memory in an emergency, then onStop() and onDestroy() might not be called. Therefore, you should use onPause() to write crucial persistent data (such as user edits) to storage. However, you should be selective about what information must be retained during onPause(), because any blocking procedures in this method block the transition to the next activity and slow the user experience.
+</code></pre>
+<p>翻译过来就是：无论出现怎样的情况，比如程序突然死亡了，能保证的就是onPause方法是一定会调用的，而onStop和onDestory方法并不一定，所以这个特性使得onPause是持久化相关数据的最后的可靠时机。当然onPause方法不能做大量的操作，这会影响下一个Activity入栈</p>
+<p>最后	我们来一句话总结一下：</p>
+<h2 id="临时数据使用onsaveinstancestate保存恢复永久性数据使用onpause方法保存">临时数据使用onSaveInstanceState保存恢复，永久性数据使用onPause方法保存。</h2>
+<p>参考：</p>
+<p>1.<a href="http://www.jianshu.com/p/6622434511f7" title="http://www.jianshu.com/p/6622434511f7">http://www.jianshu.com/p/6622434511f7</a></p>
+<p>2.<a href="http://blog.csdn.net/lonelyroamer/article/details/8927940" title="http://blog.csdn.net/lonelyroamer/article/details/8927940">http://blog.csdn.net/lonelyroamer/article/details/8927940</a></p>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[ Android 系统的事件分发机制分析 ]]></title>
@@ -65,6 +2991,191 @@
         <link href="https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi">
         </link>
         <updated>2019-08-16T10:02:47.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="android-系统的事件分发机制分析">Android 系统的事件分发机制分析</h1>
+<p>Android中可以相应事件的控件有View和ViewGroup。其实ViewGroup也是一种View。只不过大部分情况下ViewGroup作为一种View容器来使用了。<br>
+View中有三个关键的方法</p>
+<pre><code>1. public boolean dispatchTouchEvent(MotionEvent event)		//事件分发的方法
+2. public boolean onTouchEvent(MotionEvent event)			//事件处理的方法
+</code></pre>
+<p>ViewGroup中多了以下方法</p>
+<pre><code>public boolean onInterceptTouchEvent(MotionEvent ev)		//事件拦截的方法
+</code></pre>
+<p>Android中touch事件的传递，绝对是先传递到ViewGroup，再传递到View的</p>
+<p>当你点击了某个控件(touch事件发生)，首先会去调用该控件所在布局(ViewGroup)的dispatchTouchEvent方法，然后在布局的</p>
+<p>dispatchTouchEvent方法中找到被点击的相应控件，再去调用该控件的dispatchTouchEvent方法。</p>
+<pre><code>public boolean dispatchTouchEvent(MotionEvent ev) {  
+final int action = ev.getAction();  
+final float xf = ev.getX();  
+final float yf = ev.getY();  
+final float scrolledXFloat = xf + mScrollX;  
+final float scrolledYFloat = yf + mScrollY;  
+final Rect frame = mTempRect;  
+boolean disallowIntercept = (mGroupFlags &amp; FLAG_DISALLOW_INTERCEPT) != 0;  
+if (action == MotionEvent.ACTION_DOWN) {  
+    if (mMotionTarget != null) {  
+        mMotionTarget = null;  
+    }  
+    if (disallowIntercept || !onInterceptTouchEvent(ev)) {  
+        ev.setAction(MotionEvent.ACTION_DOWN);  
+        final int scrolledXInt = (int) scrolledXFloat;  
+        final int scrolledYInt = (int) scrolledYFloat;  
+        final View[] children = mChildren;  
+        final int count = mChildrenCount;  
+        for (int i = count - 1; i &gt;= 0; i--) {  
+            final View child = children[i];  
+            if ((child.mViewFlags &amp; VISIBILITY_MASK) == VISIBLE  
+                    || child.getAnimation() != null) {  
+                child.getHitRect(frame);  
+                if (frame.contains(scrolledXInt, scrolledYInt)) {  
+                    final float xc = scrolledXFloat - child.mLeft;  
+                    final float yc = scrolledYFloat - child.mTop;  
+                    ev.setLocation(xc, yc);  
+                    child.mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+                    if (child.dispatchTouchEvent(ev))  {  
+                        mMotionTarget = child;  
+                        return true;  
+                    }  
+                }  
+            }  
+        }  
+    }  
+}  
+boolean isUpOrCancel = (action == MotionEvent.ACTION_UP) ||  
+        (action == MotionEvent.ACTION_CANCEL);  
+if (isUpOrCancel) {  
+    mGroupFlags &amp;= ~FLAG_DISALLOW_INTERCEPT;  
+}  
+final View target = mMotionTarget;  
+if (target == null) {  
+    ev.setLocation(xf, yf);  
+    if ((mPrivateFlags &amp; CANCEL_NEXT_UP_EVENT) != 0) {  
+        ev.setAction(MotionEvent.ACTION_CANCEL);  
+        mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    }  
+    return super.dispatchTouchEvent(ev);  
+}  
+if (!disallowIntercept &amp;&amp; onInterceptTouchEvent(ev)) {  
+    final float xc = scrolledXFloat - (float) target.mLeft;  
+    final float yc = scrolledYFloat - (float) target.mTop;  
+    mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    ev.setAction(MotionEvent.ACTION_CANCEL);  
+    ev.setLocation(xc, yc);  
+    if (!target.dispatchTouchEvent(ev)) {  
+    }  
+    mMotionTarget = null;  
+    return true;  
+}  
+if (isUpOrCancel) {  
+    mMotionTarget = null;  
+}  
+final float xc = scrolledXFloat - (float) target.mLeft;  
+final float yc = scrolledYFloat - (float) target.mTop;  
+ev.setLocation(xc, yc);  
+if ((target.mPrivateFlags &amp; CANCEL_NEXT_UP_EVENT) != 0) {  
+    ev.setAction(MotionEvent.ACTION_CANCEL);  
+    target.mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
+    mMotionTarget = null;  
+}  
+return target.dispatchTouchEvent(ev);  
+}  
+</code></pre>
+<p>从上面的代码可以看出。如果viewgroup的disallowIntercept属性为false(默认是false，也可以通过requestDisallowInterceptTouchEvent方法对这个值进行修改)，或者onInterceptTouchEvent(ev)返回了true，那ViewGroup的<br>
+dispatchTouchEvent()方法也会返回false，事件就不会往下分发了，如果ViewGroup禁用了拦截机制(disallowIntercept=true)或者没有拦截事件(返回false)，事件就会分发给ViewGroup中的 子view了。然后子view开始处理事件了。</p>
+<p><img src="http://img.blog.csdn.net/20130629200236578?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvc2lueXU4OTA4MDc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>从图中可以看出当ViewGroup分发事件的时候先调用自己的拦截方法，如果拦截方法返回了true，那么事件就不在向下传递给view了。然后ViewGroup就开始自己处理事件了。如果ViewGroup拦截方法返回了false，那么事件就会向下传递给view，然后view开始调用自己的分发方法，然后调用自己的事件处理方法。</p>
+<h2 id="总结">总结</h2>
+<p>如果View设置了<code>setOnTouchListener()</code>方法和<code>setOnLongClick()</code>和 <code>setOnClickListener()</code>方法，那默认情况下onTouch方法会先于<br>
+<code>onClick()</code>, <code>onLongClick()</code>方法调用。</p>
+<pre><code>  button.setOnTouchListener(new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            Log.i(TAG, &quot;button------onTouch: &quot; + event.getAction());
+            return false;
+        }
+    });
+
+
+button.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            Log.i(TAG, &quot;button --- onClick: &quot;);
+        }
+    });
+
+
+09-15 14:08:15.184 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button------onTouch: 0(Down)
+09-15 14:08:15.254 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button------onTouch: 1(Up)
+09-15 14:08:15.273 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button --- onClick:(onClick)
+</code></pre>
+<hr>
+<p>view的<code>dispatchTouchEvent</code>方法（精简后代码）。</p>
+<pre><code>	public boolean dispatchTouchEvent(MotionEvent event) {
+    ...
+    boolean result = false;	// result 为返回值，主要作用是告诉调用者事件是否已经被消费。
+    if (onFilterTouchEventForSecurity(event)) {
+        ListenerInfo li = mListenerInfo;
+        /** 
+         * 如果设置了OnTouchListener，并且当前 View 可点击，就调用监听器的 onTouch 方法，
+         * 如果 onTouch 方法返回值为 true，就设置 result 为 true。
+         */
+        if (li != null &amp;&amp; li.mOnTouchListener != null
+                &amp;&amp; (mViewFlags &amp; ENABLED_MASK) == ENABLED
+                &amp;&amp; li.mOnTouchListener.onTouch(this, event)) {
+            result = true;
+        }
+      
+        /** 
+         * 如果 result 为 false，则调用自身的 onTouchEvent。
+         * 如果 onTouchEvent 返回值为 true，则设置 result 为 true。
+         */
+        if (!result &amp;&amp; onTouchEvent(event)) {
+            result = true;
+        }
+    }
+    ...
+    return result;
+}	
+</code></pre>
+<p>可以看出如果设置了<code>onTouchListener</code>的话。优先调用<code>onTouchListener</code>的<code>onTouch()</code>方法。<br>
+但是如果在OnTouch方法里面返回true的话，就代表消费了事件，该事件不在往下分发，所以View的 <code>onClick</code>，<code>onLongClick</code> 方法就不会被调用了。因为<code>onClick()</code>and <code>onLongClick（）</code>是在view的<code>onTouchevent()</code>方法中调用的。<br>
+如果<code>onTouchListener</code>的<code>onTouch()</code>返回false的话。才会调用view的<code>onTouchEvent(event)</code>方法。</p>
+<pre><code>	public boolean onTouchEvent(MotionEvent event) {
+    ...
+    final int action = event.getAction();
+  	// 检查各种 clickable
+    if (((viewFlags &amp; CLICKABLE) == CLICKABLE ||
+            (viewFlags &amp; LONG_CLICKABLE) == LONG_CLICKABLE) ||
+            (viewFlags &amp; CONTEXT_CLICKABLE) == CONTEXT_CLICKABLE) {
+        switch (action) {
+            case MotionEvent.ACTION_UP:
+                ...
+                removeLongPressCallback();  // 移除长按
+                ...
+                performClick();             // 检查单击
+                ...
+                break;
+            case MotionEvent.ACTION_DOWN:
+                ...
+                checkForLongClick(0);       // 检测长按
+                ...
+                break;
+            ...
+        }
+        return true;                        // ◀︎表示事件被消费
+    }
+    return false;
+}
+</code></pre>
+<p>从View的<code>onTouchevent（）</code>方法中可以看出。<br>
+如果view设置了<code>clickable</code>,<code>longClickable</code>，<code>contextClickable</code>属性中的任何一个。<br>
+或者设置了 <code>onClickListener</code>，<code>onLongClickListener</code>，<code>onContextClickListener</code>中的任何一个<br>
+那个该view就会消费事件。不然不消费事件。，</p>
+<p>从<code>dispatchTouchEvent</code> 和<code>onTouchEvent()</code>方法可以看出。</p>
+<p>1	事件的调度顺序为：<br>
+onTouchListener &gt; onTouchEvent &gt; onLongClickListener &gt; onClickListener</p>
+<p>2: 如果View为Disabled。则：<code>OntouchListener</code>里面的方法不会执行。但是会执行<code>OnTouchEvent(event)</code>方法，也就是说即使view是disabled的，依然可以相应onClick事件。</p>
+<p>3： onTouchEvent方法中的ACTION_UP分支中触发onClick方法。并在这里移除长按监听。因为长按不需要处理ACTION_UP事件。</p>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[ Android 中内部存储和外部存储分析 ]]></title>
@@ -72,6 +3183,393 @@
         <link href="https://philadelphia.github.io/post/android-zhong-nei-bu-cun-chu-he-wai-bu-cun-chu-fen-xi">
         </link>
         <updated>2019-08-16T10:02:15.000Z</updated>
+        <content type="html"><![CDATA[<p>Android系统存储相关有这样几个概念，内存，内部存储，外部存储</p>
+<p>内存，RAM ，在移动设备中做系统运行用</p>
+<pre><code>随机存储器，Read Access Memory
+</code></pre>
+<p>存储器， ROM，在移动设备中做数据存储用</p>
+<pre><code>只读存储器，Read Only Memory
+</code></pre>
+<blockquote>
+<p>内部存储 <code>InternalStorage</code></p>
+<p>外部存储<br>
+<code>ExternalStorage</code></p>
+</blockquote>
+<p>Android 系统自身自带有存储，另外也可以通过 SD 卡来扩充存储空间。 前者空间较小，后者空间大，但后者不一定可用。 开发应用，处理本地数据存取时，可能会遇到这些问题：</p>
+<blockquote>
+<ol>
+<li>需要判断 SD 卡是否可用: 占用过多机身内部存储，容易招致用户反感，优先将数据存放于 SD 卡;</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="2">
+<li>应用数据存放路径，同其他应用应该保持一致，应用卸载时，清除数据:</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="3">
+<li>标新立异在 SD 卡根目录建一个目录，招致用户反感</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="4">
+<li>用户卸载应用后，残留目录或者数据在用户机器上，招致用户反感</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="5">
+<li>需要判断两者的可用空间: SD 卡存在时，可用空间反而小于机身内部存储，这时应该选用机身存储;</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="6">
+<li>数据安全性，本应用数据不愿意被其他应用读写;</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="7">
+<li>图片缓存等，不应该被扫描加入到用户相册等媒体库中去。</li>
+</ol>
+</blockquote>
+<p>那么究竟什么是内部存储什么是外部存储呢？<br>
+首先我们打开DDMS，有一个File Explorer，如下：<br>
+<img src="http://img.blog.csdn.net/20151211224232123?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""><br>
+这里有三个文件夹需要我们重视，一个是data，一个是mnt，一个是storage，我们下面就详细说说这三个文件夹。</p>
+<h2 id="1内部存储">1.内部存储</h2>
+<p>data文件夹就是我们常说的内部存储，当我们打开data文件夹之后（没有root的手机不能打开该文件夹），里边有两个文件夹值得我们关注，如下：<br>
+<img src="http://img.blog.csdn.net/20151211224609474?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>一个文件夹是app文件夹，还有一个文件夹就是data文件夹，app文件夹里存放着我们所有安装的app的apk文件，其实，当我们调试一个app的时候，可以看到控制台输出的内容，有一项是uploading .....就是上传我们的apk到这个文件夹，上传成功之后才开始安装。另一个重要的文件夹就是data文件夹了，这个文件夹里边都是一些包名，打开这些包名之后我们会看到这样的一些文件：</p>
+<pre><code>1.data/data/包名/shared_prefs
+2.data/data/包名/databases
+3.data/data/包名/files
+4.data/data/包名/cache
+</code></pre>
+<p>如果打开过data文件，应该都知道这些文件夹是干什么用的，我们在使用sharedPreferenced的时候，将数据持久化存储于本地，其实就是存在这个文件中的xml文件里，我们App里边的数据库文件就存储于databases文件夹中，还有我们的普通数据存储在files中，缓存文件存储在cache文件夹中，存储在这里的文件我们都称之为内部存储。</p>
+<h2 id="2外部存储">2.外部存储</h2>
+<p>外部存储才是我们平时操作最多的，外部存储一般就是我们上面看到的storage文件夹，当然也有可能是mnt文件夹，这个不同厂家有可能不一样。<br>
+一般来说，在storage文件夹中有一个sdcard文件夹，这个文件夹中的文件又分为两类，一类是公有目录，还有一类是私有目录，其中的公有目录有九大类，比如<code>DCIM</code>、<code>MUSIC</code>、<code>Ringtons</code>、<code>Pictures</code>、<code>Alarms</code>,<code>Movies</code>、<code>Documents</code>、<code>Notifications</code>等这种系统为我们创建的文件夹，私有目录就是<code>Android</code>这个文件夹，这个文件夹打开之后里边有两个文件夹：<code>data</code>，<code>media</code>，打开这个data文件夹，里边有许多包名组成的文件夹。每个包文件夹下又包含两个文件夹：<code>cache</code> 和<code>files</code></p>
+<pre><code>	DIRECTORY_MUSIC,
+    DIRECTORY_PODCASTS,
+    DIRECTORY_RINGTONES,
+    DIRECTORY_ALARMS,
+    DIRECTORY_NOTIFICATIONS,
+    DIRECTORY_PICTURES,
+    DIRECTORY_MOVIES,
+    DIRECTORY_DOWNLOADS,
+    DIRECTORY_DCIM,
+    DIRECTORY_DOCUMENTS
+</code></pre>
+<p>以上全都是Environment类中定义的静态变量</p>
+<h2 id="3操作存储空间">3.操作存储空间</h2>
+<p>首先，经过上面的分析，大家已经明白了，什么是内部存储，什么是外部存储，以及这两种存储方式分别存储在什么位置，一般来说，我们不会自己去操作内部存储空间，没有root权限的话，我们也没法操作内部存储空间，事实上内部存储主要是由系统来维护的。不过在代码中我们是可以访问到这个文件夹的。由于内部存储空间有限，在开发中我们一般都是操作外部存储空间，Google官方建议我们App的数据应该存储在外部存储的私有目录中该App的包名下，这样当用户卸载掉App之后，相关的数据会一并删除，如果你直接在/storage/sdcard目录下创建了一个应用的文件夹，那么当你删除应用的时候，这个文件夹就不会被删除。<br>
+经过以上的介绍，我们可以总结出下面一个表格：<br>
+<img src="http://img.blog.csdn.net/20151212091841385?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>一目了然，什么是内部存储，什么是外部存储。<br>
+如果按照路径的特征，我们又可以将文件存储的路径分为两大类，一类是路径中含有包名的，一类是路径中不含有包名的，含有包名的路径，因为和某个App有关，所以对这些文件夹的访问都是调用Context里边的方法，而不含有包名的路径，和某一个App无关，我们可以通过Environment中的方法来访问。如下图：<br>
+<img src="http://img.blog.csdn.net/20151212094211922?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQv/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
+<p>大家看到，有包名的路径我们都是调用Context中的方法来获得，没有包名的路径，我们直接调用Environment中的方法获得，那么其中有两个方法需要传入一个String类型的参数，这个参数我们使用了Environment中的常量，参数的意思是我们要访问这个路径下的哪个文件夹，比如getExternalFilesDir方法，我们看看它的源码：</p>
+<pre><code>/** 
+ * 
+ * @param type The type of files directory to return.  May be null for 
+ * the root of the files directory or one of 
+ * the following Environment constants for a subdirectory: 
+ * {@link android.os.Environment#DIRECTORY_MUSIC}, 
+ * {@link android.os.Environment#DIRECTORY_PODCASTS}, 
+ * {@link android.os.Environment#DIRECTORY_RINGTONES}, 
+ * {@link android.os.Environment#DIRECTORY_ALARMS}, 
+ * {@link android.os.Environment#DIRECTORY_NOTIFICATIONS}, 
+ * {@link android.os.Environment#DIRECTORY_PICTURES}, or 
+ * {@link android.os.Environment#DIRECTORY_MOVIES}. 
+ * 
+ * @return The path of the directory holding application files 
+ * on external storage.  Returns null if external storage is not currently 
+ * mounted so it could not ensure the path exists; you will need to call 
+ * this method again when it is available. 
+ * 
+ * @see #getFilesDir 
+ * @see android.os.Environment#getExternalStoragePublicDirectory 
+ */  
+@Nullable  
+public abstract File getExternalFilesDir(@Nullable String type);  
+</code></pre>
+<p>它的注释非常多，我这里只列出其中一部分，我们看到，我们可以访问files文件夹下的Music文件夹、Movies文件夹等等好几种。<br>
+说到这里，我想大家对内部存储、外部存储该有了一个清晰的认识了吧。我们在开发中，<strong>不建议往内部存储中写太多的数据，毕竟空间有限。外部存储在使用的时候最好能够将文件存放在私有目录下，这样有利于系统维护，也避免用户的反感</strong>。<br>
+现在我们再来看看我们一开始提出的问题，当我们点击清除数据的时候清除的是哪里的数据呢？毫无疑问，当然是内部存储目录中相应的files和cache文件夹中的文件和外部存储中相应的files和cache文件夹中的文件，至于这些文件夹的路径我想你应该已经明白了。<br>
+好了，最后再送给大家一个文件操作工具类：</p>
+<pre><code>public class SDCardHelper {  
+
+    // 判断SD卡是否被挂载  
+    public static boolean isSDCardMounted() {  
+        // return Environment.getExternalStorageState().equals(&quot;mounted&quot;);  
+        return Environment.getExternalStorageState().equals(  
+                Environment.MEDIA_MOUNTED);  
+}  
+
+    // 获取SD卡的根目录  
+    public static String getSDCardBaseDir() {  
+        if (isSDCardMounted()) {  
+            return Environment.getExternalStorageDirectory().getAbsolutePath();  
+        }  
+        return null;  
+    }  
+  
+    // 获取SD卡的完整空间大小，返回MB  
+    public static long getSDCardSize() {  
+        if (isSDCardMounted()) {  
+            StatFs fs = new StatFs(getSDCardBaseDir());  
+            long count = fs.getBlockCountLong();  
+            long size = fs.getBlockSizeLong();  
+            return count * size / 1024 / 1024;  
+        }  
+        return 0;  
+    }  
+  
+    // 获取SD卡的剩余空间大小  
+    public static long getSDCardFreeSize() {  
+        if (isSDCardMounted()) {  
+            StatFs fs = new StatFs(getSDCardBaseDir());  
+            long count = fs.getFreeBlocksLong();  
+            long size = fs.getBlockSizeLong();  
+            return count * size / 1024 / 1024;  
+        }  
+        return 0;  
+    }  
+  
+    // 获取SD卡的可用空间大小  
+    public static long getSDCardAvailableSize() {  
+        if (isSDCardMounted()) {  
+            StatFs fs = new StatFs(getSDCardBaseDir());  
+            long count = fs.getAvailableBlocksLong();  
+            long size = fs.getBlockSizeLong();  
+            return count * size / 1024 / 1024;  
+        }  
+        return 0;  
+    }  
+  
+    // 往SD卡的公有目录下保存文件  
+    public static boolean saveFileToSDCardPublicDir(byte[] data, String type,  
+            String fileName) {  
+        BufferedOutputStream bos = null;  
+        if (isSDCardMounted()) {  
+            File file = Environment.getExternalStoragePublicDirectory(type);  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                bos.write(data);  
+                bos.flush();  
+                return true;  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                try {  
+                    bos.close();  
+                } catch (IOException e) {  
+                    // TODO Auto-generated catch block  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+        return false;  
+    }  
+  
+    // 往SD卡的自定义目录下保存文件  
+    public static boolean saveFileToSDCardCustomDir(byte[] data, String dir,  
+            String fileName) {  
+        BufferedOutputStream bos = null;  
+        if (isSDCardMounted()) {  
+            File file = new File(getSDCardBaseDir() + File.separator + dir);  
+            if (!file.exists()) {  
+                file.mkdirs();// 递归创建自定义目录  
+            }  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                bos.write(data);  
+                bos.flush();  
+                return true;  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                try {  
+                    bos.close();  
+                } catch (IOException e) {  
+                    // TODO Auto-generated catch block  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+        return false;  
+    }  
+  
+    // 往SD卡的私有Files目录下保存文件  
+    public static boolean saveFileToSDCardPrivateFilesDir(byte[] data,  
+            String type, String fileName, Context context) {  
+        BufferedOutputStream bos = null;  
+        if (isSDCardMounted()) {  
+            File file = context.getExternalFilesDir(type);  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                bos.write(data);  
+                bos.flush();  
+                return true;  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                try {  
+                    bos.close();  
+                } catch (IOException e) {  
+                    // TODO Auto-generated catch block  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+    return false;  
+    }  
+  
+    // 往SD卡的私有Cache目录下保存文件  
+    public static boolean saveFileToSDCardPrivateCacheDir(byte[] data,  
+            String fileName, Context context) {  
+        BufferedOutputStream bos = null;  
+        if (isSDCardMounted()) {  
+            File file = context.getExternalCacheDir();  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                bos.write(data);  
+                bos.flush();  
+                return true;  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                try {  
+                    bos.close();  
+                } catch (IOException e) {  
+                    // TODO Auto-generated catch block  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+        return false;  
+    }  
+  
+    // 保存bitmap图片到SDCard的私有Cache目录  
+    public static boolean saveBitmapToSDCardPrivateCacheDir(Bitmap bitmap,  
+            String fileName, Context context) {  
+        if (isSDCardMounted()) {  
+            BufferedOutputStream bos = null;  
+            // 获取私有的Cache缓存目录  
+            File file = context.getExternalCacheDir();  
+  
+            try {  
+                bos = new BufferedOutputStream(new FileOutputStream(new File(  
+                        file, fileName)));  
+                if (fileName != null  
+                        &amp;&amp; (fileName.contains(&quot;.png&quot;) || fileName  
+                                .contains(&quot;.PNG&quot;))) {  
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);  
+                } else {  
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos);  
+                }  
+                bos.flush();  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            } finally {  
+                if (bos != null) {  
+                    try {  
+                        bos.close();  
+                    } catch (IOException e) {  
+                        e.printStackTrace();  
+                    }  
+                }  
+            }  
+            return true;  
+        } else {  
+            return false;  
+        }  
+    }  
+  
+    // 从SD卡获取文件  
+    public static byte[] loadFileFromSDCard(String fileDir) {  
+        BufferedInputStream bis = null;  
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();  
+  
+        try {  
+            bis = new BufferedInputStream(  
+                    new FileInputStream(new File(fileDir)));  
+            byte[] buffer = new byte[8 * 1024];  
+            int c = 0;  
+            while ((c = bis.read(buffer)) != -1) {  
+                baos.write(buffer, 0, c);  
+                baos.flush();  
+            }  
+            return baos.toByteArray();  
+        } catch (Exception e) {  
+            e.printStackTrace();  
+        } finally {  
+            try {  
+                baos.close();  
+                bis.close();  
+            } catch (IOException e) {  
+                e.printStackTrace();  
+            }  
+        }  
+        return null;  
+    }  
+  
+    // 从SDCard中寻找指定目录下的文件，返回Bitmap  
+    public Bitmap loadBitmapFromSDCard(String filePath) {  
+        byte[] data = loadFileFromSDCard(filePath);  
+        if (data != null) {  
+            Bitmap bm = BitmapFactory.decodeByteArray(data, 0, data.length);  
+            if (bm != null) {  
+                return bm;  
+            }  
+        }  
+        return null;  
+    }  
+  
+    // 获取SD卡公有目录的路径  
+    public static String getSDCardPublicDir(String type) {  
+        return Environment.getExternalStoragePublicDirectory(type).toString();  
+    }  
+  
+    // 获取SD卡私有Cache目录的路径  
+    public static String getSDCardPrivateCacheDir(Context context) {  
+        return context.getExternalCacheDir().getAbsolutePath();  
+    }  
+  
+    // 获取SD卡私有Files目录的路径  
+    public static String getSDCardPrivateFilesDir(Context context, String type) {  
+        return context.getExternalFilesDir(type).getAbsolutePath();  
+    }  
+  
+    public static boolean isFileExist(String filePath) {  
+        File file = new File(filePath);  
+        return file.isFile();  
+    }  
+  
+    // 从sdcard中删除文件  
+    public static boolean removeFileFromSDCard(String filePath) {  
+        File file = new File(filePath);  
+        if (file.exists()) {  
+            try {  
+                file.delete();  
+                return true;  
+            } catch (Exception e) {  
+                return false;  
+            }  
+        } else {  
+            return false;  
+        }  
+    }  
+}  
+</code></pre>
+<p>copy自：</p>
+<p><a href="http://blog.csdn.net/u012702547/article/details/50269639">http://blog.csdn.net/u012702547/article/details/50269639</a></p>
+<p><a href="https://www.liaohuqiu.net/cn/posts/storage-in-android/">https://www.liaohuqiu.net/cn/posts/storage-in-android/</a></p>
+<p>Ths</p>
+]]></content>
     </entry>
     <entry>
         <title type="html"><![CDATA[Android:View Inflation 分析]]></title>
@@ -79,5 +3577,170 @@
         <link href="https://philadelphia.github.io/post/androidview-inflation-fen-xi">
         </link>
         <updated>2019-08-16T09:41:45.000Z</updated>
+        <content type="html"><![CDATA[<p>LayoutInflater 使用说明</p>
+<p>LayoutInflater主要是用于加载布局。<br>
+加载布局的任务通常都是在Activity中调用setContentView()方法来完成的。其实setContentView()方法的内部也是使用LayoutInflater来加载布局的，只不过这部分源码是internal的，不太容易查看到。</p>
+<p>先来看一下LayoutInflater的基本用法吧，它的用法非常简单，首先需要获取到LayoutInflater的实例，有两种方法可以获取到，第一种写法如下：</p>
+<pre><code>LayoutInflater layoutInflater = LayoutInflater.from(context);  
+</code></pre>
+<p>当然，还有另外一种写法也可以完成同样的效果：</p>
+<pre><code>LayoutInflater layoutInflater = (LayoutInflater) context  
+    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);  
+</code></pre>
+<p>其实第一种就是第二种的简单写法，只是Android给我们做了一下封装而已。代码如下：</p>
+<pre><code> public static LayoutInflater from(Context context) {
+    LayoutInflater LayoutInflater =
+            (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+    if (LayoutInflater == null) {
+        throw new AssertionError(&quot;LayoutInflater not found.&quot;);
+    }
+    return LayoutInflater;
+}
+</code></pre>
+<p>得到了LayoutInflater的实例之后就可以调用它的inflate()方法来加载布局了，如下所示：</p>
+<pre><code>layoutInflater.inflate(resourceId, root);  
+</code></pre>
+<p>inflate()方法一般接收两个参数，第一个参数就是要加载的布局资源文件id，第二个参数是指给该布局的外部再嵌套一层父布局，如果不需要就直接传null。这样就成功成功创建了一个布局的实例，之后再将它添加到指定的位置就可以显示出来了。</p>
+<p>其实它是调用一个三个参数的重载方法来实现的。<br>
+代码实现：</p>
+<pre><code>public View inflate(@LayoutRes int resource, @Nullable ViewGroup root) {
+    return inflate(resource, root, root != null);
+}
+</code></pre>
+<p>该三个参数的方法的实现为：</p>
+<p>public View inflate(@LayoutRes int resource, @Nullable ViewGroup root) {<br>
+return inflate(resource, root, root != null);<br>
+}</p>
+<p>也就是说不管你是使用的哪个inflate()方法的重载，最终都会辗转调用到LayoutInflater的如下代码中</p>
+<p>三个参数的方法的实现为：</p>
+<pre><code>public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean attachToRoot) {
+    synchronized (mConstructorArgs) {
+        Trace.traceBegin(Trace.TRACE_TAG_VIEW, &quot;inflate&quot;);
+
+        final Context inflaterContext = mContext;
+        final AttributeSet attrs = Xml.asAttributeSet(parser);
+        Context lastContext = (Context) mConstructorArgs[0];
+        mConstructorArgs[0] = inflaterContext;
+        View result = root;
+
+        try {
+            // Look for the root node.
+            int type;
+            while ((type = parser.next()) != XmlPullParser.START_TAG &amp;&amp;
+                    type != XmlPullParser.END_DOCUMENT) {
+                // Empty
+            }
+
+            if (type != XmlPullParser.START_TAG) {
+                throw new InflateException(parser.getPositionDescription()
+                        + &quot;: No start tag found!&quot;);
+            }
+
+            final String name = parser.getName();
+
+            if (DEBUG) {
+                System.out.println(&quot;**************************&quot;);
+                System.out.println(&quot;Creating root view: &quot;
+                        + name);
+                System.out.println(&quot;**************************&quot;);
+            }
+
+		//如果开始IDE标签名是Merge，则会将布局文件中的view依次加入到root视图中。
+            if (TAG_MERGE.equals(name)) {
+				//如果开始IDE标签名是Merge,如果attachToRoot 为false，会报错
+                if (root == null || !attachToRoot) {
+                    throw new InflateException(&quot;&lt;merge /&gt; can be used only with a valid &quot;
+                            + &quot;ViewGroup root and attachToRoot=true&quot;);
+                }
+
+			//遍历parser。将view依次加入到root中、
+                rInflate(parser, root, inflaterContext, attrs, false);
+            } else {
+				//如果开始标签不是merge。则temp就是该布局的根视图。
+                // Temp is the root view that was found in the xml
+                final View temp = createViewFromTag(root, name, inflaterContext, attrs);
+
+                ViewGroup.LayoutParams params = null;
+
+                if (root != null) {
+                    if (DEBUG) {
+                        System.out.println(&quot;Creating params from root: &quot; +
+                                root);
+                    }
+                    // Create layout params that match root, if supplied
+                    params = root.generateLayoutParams(attrs);
+                    if (!attachToRoot) {
+                        // Set the layout params for temp if we are not
+                        // attaching. (If we are, we use addView, below)
+                        temp.setLayoutParams(params);
+                    }
+                }
+
+                if (DEBUG) {
+                    System.out.println(&quot;-----&gt; start inflating children&quot;);
+                }
+
+                // Inflate all children under temp against its context.
+                rInflateChildren(parser, temp, attrs, true);
+
+                if (DEBUG) {
+                    System.out.println(&quot;-----&gt; done inflating children&quot;);
+                }
+
+                // We are supposed to attach all the views we found (int temp)
+                // to root. Do that now.
+                if (root != null &amp;&amp; attachToRoot) {
+                    root.addView(temp, params);
+                }
+
+                // Decide whether to return the root that was passed in or the
+                // top view found in xml.
+                if (root == null || !attachToRoot) {
+                    result = temp;
+                }
+            }
+
+        } catch (XmlPullParserException e) {
+            final InflateException ie = new InflateException(e.getMessage(), e);
+            ie.setStackTrace(EMPTY_STACK_TRACE);
+            throw ie;
+        } catch (Exception e) {
+            final InflateException ie = new InflateException(parser.getPositionDescription()
+                    + &quot;: &quot; + e.getMessage(), e);
+            ie.setStackTrace(EMPTY_STACK_TRACE);
+            throw ie;
+        } finally {
+            // Don't retain static reference on context.
+            mConstructorArgs[0] = lastContext;
+            mConstructorArgs[1] = null;
+
+            Trace.traceEnd(Trace.TRACE_TAG_VIEW);
+        }
+
+        return result;
+    }
+}
+</code></pre>
+<pre><code>
+	 第二个参数和第三个参数有四种组合情况
+        if(root == null &amp;&amp; ！attachToRoot){
+            返回id里的view本身
+        }
+
+        if(root != null &amp;&amp; attachToRoot){
+            返回root本身，此时root已经将id里的控件添加了。
+        此时如果在使用root.addview(view) 就会报错。view此时已经有parent、因为view本身就是root自己。root自己addview自身会报错
+        }else if (root != null &amp;&amp; !attachToRoot){
+            返回返回id里的view本身，此时id里的控件已经设置了布局参数
+        }
+
+	1. 如果root为null，attachToRoot将失去作用，设置任何值都没有意义。
+	2. 如果root不为null，attachToRoot设为true，则会给加载的布局文件的指定一个父布局，即root。
+	3. 如果root不为null，attachToRoot设为false，则会将布局文件最外层的所有layout属性进行设置，当该view被添加到父view当中时，这些layout属性会自动生效。
+	4. 在不设置attachToRoot参数的情况下，如果root不为null，attachToRoot参数默认为true。
+
+</code></pre>
+<p>Reference:	<a href="http://blog.csdn.net/guolin_blog/article/details/12921889">http://blog.csdn.net/guolin_blog/article/details/12921889</a></p>
+]]></content>
     </entry>
 </feed>
