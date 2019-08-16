@@ -1,22 +1,93 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://github.com/philadelphia/philadelphia.github.io</id>
-    <title>Gridea</title>
-    <updated>2019-08-16T09:37:32.907Z</updated>
-    <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://github.com/philadelphia/philadelphia.github.io"/>
-    <link rel="self" href="https://github.com/philadelphia/philadelphia.github.io/atom.xml"/>
-    <subtitle>温故而知新</subtitle>
-    <logo>https://github.com/philadelphia/philadelphia.github.io/images/avatar.png</logo>
-    <icon>https://github.com/philadelphia/philadelphia.github.io/favicon.ico</icon>
-    <rights>All rights reserved 2019, Gridea</rights>
-    <entry>
-        <title type="html"><![CDATA[Handler 引起的内存泄露分析以及解决方法]]></title>
-        <id>https://github.com/philadelphia/philadelphia.github.io/post/handler-yin-qi-de-nei-cun-xie-lu-fen-xi-yi-ji-jie-jue-fang-fa</id>
-        <link href="https://github.com/philadelphia/philadelphia.github.io/post/handler-yin-qi-de-nei-cun-xie-lu-fen-xi-yi-ji-jie-jue-fang-fa">
-        </link>
-        <updated>2019-08-16T09:36:50.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="handler-引起的内存泄露分析以及解决方法">Handler 引起的内存泄露分析以及解决方法</h1>
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Handler 引起的内存泄露分析以及解决方法 | Gridea</title>
+<meta name="description" content="温故而知新" />
+<link rel="shortcut icon" href="https://github.com/philadelphia/philadelphia.github.io/favicon.ico?v=1565948249956">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://github.com/philadelphia/philadelphia.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://github.com/philadelphia/philadelphia.github.io">
+  <img class="avatar" src="https://github.com/philadelphia/philadelphia.github.io/images/avatar.png?v=1565948249956" alt="">
+  </a>
+  <h1 class="site-title">
+    Gridea
+  </h1>
+  <p class="site-description">
+    温故而知新
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu" target="_blank">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Handler 引起的内存泄露分析以及解决方法
+            </h2>
+            <div class="post-info">
+              <span>
+                2019-08-16
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="handler-引起的内存泄露分析以及解决方法">Handler 引起的内存泄露分析以及解决方法</h1>
 <p>Handler是Android系统提供的一种在子线程更新UI的机制，但是使用不当会导致memory leak。严重的话可能导致OOM</p>
 <p>Java语言的垃圾回收机制采用了可达性分析来判断一个对象是否还有存在的必要性，如无必要就回收该对象引用的内存区域，</p>
 <pre><code class="language-java">Handler handler ；
@@ -177,56 +248,79 @@ public Handler(Callback callback, boolean async) {
 <p>此时，真相大白了。主线程的ThreadLocal——&gt;looper——&gt;messagequue——&gt;message——&gt;handler——&gt;Acitivity</p>
 <p>因为APP在活动中，所以主线程一直存在。looper一直存在，messageQueue一直存在。所以当我们发送了延迟消息时，而此时Activity销毁的话。自然会引起内存泄露的。</p>
 <p>解决方法也很明了了。既然我们不能再looper层面做文章，就只能在handler和message层面做文章了。在Activity销毁时 将Handler手动置为null,或者将messagequeue 清空，或者将Handler设置为静态内部类。然后内部通过若引用持有Activity对象。总之就是要让Handler和message改放手时就放手</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[不好用啊]]></title>
-        <id>https://github.com/philadelphia/philadelphia.github.io/post/bu-hao-yong-a</id>
-        <link href="https://github.com/philadelphia/philadelphia.github.io/post/bu-hao-yong-a">
-        </link>
-        <updated>2019-08-16T08:17:36.000Z</updated>
-        <content type="html"><![CDATA[<p>怎么样用呢，很难你用呢大</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Gridea test]]></title>
-        <id>https://github.com/philadelphia/philadelphia.github.io/post/gridea-test</id>
-        <link href="https://github.com/philadelphia/philadelphia.github.io/post/gridea-test">
-        </link>
-        <updated>2019-08-16T08:11:23.000Z</updated>
-        <content type="html"><![CDATA[<p>test</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Hello Gridea]]></title>
-        <id>https://github.com/philadelphia/philadelphia.github.io/post/hello-gridea</id>
-        <link href="https://github.com/philadelphia/philadelphia.github.io/post/hello-gridea">
-        </link>
-        <updated>2018-12-11T16:00:00.000Z</updated>
-        <summary type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
-✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
-]]></summary>
-        <content type="html"><![CDATA[<p>👏  欢迎使用 <strong>Gridea</strong> ！<br>
-✍️  <strong>Gridea</strong> 一个静态博客写作客户端。你可以用它来记录你的生活、心情、知识、笔记、创意... ...</p>
-<!-- more -->
-<p><a href="https://github.com/getgridea/gridea">Github</a><br>
-<a href="http://hvenotes.fehey.com/">Gridea 主页</a><br>
-<a href="http://fehey.com/">示例网站</a></p>
-<h2 id="特性">特性👇</h2>
-<p>📝  你可以使用最酷的 <strong>Markdown</strong> 语法，进行快速创作</p>
-<p>🌉  你可以给文章配上精美的封面图和在文章任意位置插入图片</p>
-<p>🏷️  你可以对文章进行标签分组</p>
-<p>📋  你可以自定义菜单，甚至可以创建外部链接菜单</p>
-<p>💻  你可以在 <strong>𝖶𝗂𝗇𝖽𝗈𝗐𝗌</strong> 或 <strong>𝖬𝖺𝖼𝖮𝖲</strong> 设备上使用此客户端</p>
-<p>🌎  你可以使用 <strong>𝖦𝗂𝗍𝗁𝗎𝖻 𝖯𝖺𝗀𝖾𝗌</strong> 或 <strong>Coding Pages</strong> 向世界展示，未来将支持更多平台</p>
-<p>💬  你可以进行简单的配置，接入 <a href="https://github.com/gitalk/gitalk">Gitalk</a> 或 <a href="https://github.com/SukkaW/DisqusJS">DisqusJS</a> 评论系统</p>
-<p>🇬🇧  你可以使用<strong>中文简体</strong>或<strong>英语</strong></p>
-<p>🌁  你可以任意使用应用内默认主题或任意第三方主题，强大的主题自定义能力</p>
-<p>🖥  你可以自定义源文件夹，利用 OneDrive、百度网盘、iCloud、Dropbox 等进行多设备同步</p>
-<p>🌱 当然 <strong>Gridea</strong> 还很年轻，有很多不足，但请相信，它会不停向前🏃</p>
-<p>未来，它一定会成为你离不开的伙伴</p>
-<p>尽情发挥你的才华吧！</p>
-<p>😘 Enjoy~</p>
-]]></content>
-    </entry>
-</feed>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#handler-%E5%BC%95%E8%B5%B7%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E5%88%86%E6%9E%90%E4%BB%A5%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95">Handler 引起的内存泄露分析以及解决方法</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://github.com/philadelphia/philadelphia.github.io/post/bu-hao-yong-a">
+              <h3 class="post-title">
+                不好用啊
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://github.com/philadelphia/philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      console.log('section.offsetHeight', section.offsetHeight);
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
