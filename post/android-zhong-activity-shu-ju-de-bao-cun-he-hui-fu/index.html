@@ -1,18 +1,15 @@
-
 <!DOCTYPE html>
 <html>
   <head>
-    
-<meta charset="utf-8" >
+    <meta charset="utf-8" >
 
 <title>Android中Activity数据的保存和恢复  | philadelphia</title>
 <meta name="description" content="德不孤必有邻">
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.0/animate.min.css">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565950474165">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565950500322">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
@@ -21,72 +18,85 @@
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
 
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
 
 
   </head>
   <body>
     <div id="app" class="main">
-      <div class="site-header-container">
-  <div class="site-header">
-    <div class="left">
-      <a href="https://philadelphia.github.io">
-        <img class="avatar" src="https://philadelphia.github.io/images/avatar.png?v=1565950474165" alt="" width="32px" height="32px">
-      </a>
-      <a href="https://philadelphia.github.io">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://philadelphia.github.io">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1565950500322" class="site-logo">
         <h1 class="site-title">philadelphia</h1>
       </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
     </div>
-    <div class="right">
-      <transition name="fade">
-        <i class="icon" :class="{ 'icon-close-outline': menuVisible, 'icon-menu-outline': !menuVisible }" @click="menuVisible = !menuVisible"></i>
-      </transition>
-    </div>
-  </div>
-</div>
-
-<transition name="fade">
-  <div class="menu-container" style="display: none;" v-show="menuVisible">
-    <div class="menu-list">
+    <div>
       
         
-          <a class="menu purple-link" href="/" class="menu" target="_blank">
+          <a href="/" class="site-nav" target="_blank">
             首页
           </a>
         
       
         
-          <a href="/archives" class="menu purple-link">
+          <a href="/archives" class="site-nav">
             归档
           </a>
         
       
         
-          <a href="/tags" class="menu purple-link">
+          <a href="/tags" class="site-nav">
             标签
           </a>
         
       
         
-          <a href="/post/about" class="menu purple-link">
+          <a href="/post/about" class="site-nav">
             关于
           </a>
         
       
     </div>
   </div>
-</transition>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      德不孤必有邻
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
 
 
-      <div class="content-container">
-        <div class="post-detail">
-          
-          <h2 class="post-title">Android中Activity数据的保存和恢复 </h2>
-          <div class="post-info post-detail-info">
-            <span><i class="icon-calendar-outline"></i> 2019-08-16</span>
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Android中Activity数据的保存和恢复 </h2>
+            <div class="post-date">2019-08-16</div>
             
-          </div>
-          <div class="post-content">
-            <h1 id="android中activity数据的保存和恢复">Android中Activity数据的保存和恢复</h1>
+            <div class="post-content">
+              <h1 id="android中activity数据的保存和恢复">Android中Activity数据的保存和恢复</h1>
 <p>在我们的APP使用的过程中，总有可能出现各种手滑、被压在后台、甚至突然被杀死的情况。所以对APP中一些临时数据或关键持久型数据，就需要我们使用正确的方式进行保存或恢复。</p>
 <p>突发情况都有哪些？</p>
 <p>因为本文讨论的是当一些突发情况的出现时，对数据的保存和恢复。所以现在总结一下突发情况应该都有哪些？</p>
@@ -296,43 +306,32 @@ onPuase的解释是：onPause(), onStop(), onDestroy() are &quot;killable after&
 <p>1.<a href="http://www.jianshu.com/p/6622434511f7" title="http://www.jianshu.com/p/6622434511f7">http://www.jianshu.com/p/6622434511f7</a></p>
 <p>2.<a href="http://blog.csdn.net/lonelyroamer/article/details/8927940" title="http://blog.csdn.net/lonelyroamer/article/details/8927940">http://blog.csdn.net/lonelyroamer/article/details/8927940</a></p>
 
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi">
+                  <h3 class="post-title">
+                     Android 系统的事件分发机制分析 
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
           </div>
+
         </div>
-
-        
-          <div class="next-post">
-            <a class="purple-link" href="https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi">
-              <h3 class="post-title">
-                下一篇： Android 系统的事件分发机制分析 
-              </h3>
-            </a>
-          </div>
-          
       </div>
-
-      
-
-      <div class="site-footer">
-  <div class="slogan">德不孤必有邻</div>
-  <div class="social-container">
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-  </div>
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
-</div>
-
-
     </div>
-    <script type="application/javascript">
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
 
 hljs.initHighlightingOnLoad()
 
