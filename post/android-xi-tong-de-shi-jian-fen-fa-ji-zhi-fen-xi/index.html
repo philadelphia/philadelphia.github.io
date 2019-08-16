@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565968073286">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565968311480">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
@@ -30,7 +30,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://philadelphia.github.io">
-        <img src="https://philadelphia.github.io/images/avatar.png?v=1565968073286" class="site-logo">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1565968311480" class="site-logo">
         <h1 class="site-title">philadelphia</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -96,8 +96,7 @@
             <div class="post-date">2019-08-16</div>
             
             <div class="post-content">
-              <h1 id="android-系统的事件分发机制分析">Android 系统的事件分发机制分析</h1>
-<p>Android中可以相应事件的控件有View和ViewGroup。其实ViewGroup也是一种View。只不过大部分情况下ViewGroup作为一种View容器来使用了。<br>
+              <p>Android中可以相应事件的控件有View和ViewGroup。其实ViewGroup也是一种View。只不过大部分情况下ViewGroup作为一种View容器来使用了。<br>
 View中有三个关键的方法</p>
 <pre><code>1. public boolean dispatchTouchEvent(MotionEvent event)		//事件分发的方法
 2. public boolean onTouchEvent(MotionEvent event)			//事件处理的方法

@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-08-16T15:09:11.240Z</updated>
+    <updated>2019-08-16T15:12:27.150Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -418,8 +418,7 @@ public final Subscription subscribe(final Action1&lt;? super T&gt; onNext, final
         <link href="https://philadelphia.github.io/post/retrofit20-jian-jie">
         </link>
         <updated>2019-08-16T10:07:18.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="retrofit-20">Retrofit 2.0</h1>
-<h2 id="1定义">1.定义</h2>
+        <content type="html"><![CDATA[<h2 id="1定义">1.定义</h2>
 <p>官方的Retrofit主页是这样描述它的</p>
 <blockquote>
 <p>A type-safe HTTP client for Android and Java</p>
@@ -2432,8 +2431,7 @@ Request toRequest(Object... args) throws IOException {
         <link href="https://philadelphia.github.io/post/okhttp-yuan-ma-fen-xi">
         </link>
         <updated>2019-08-16T10:05:29.000Z</updated>
-        <content type="html"><![CDATA[<p>OkHttp 源码分析</p>
-<p>基于OkHttp3.11.0</p>
+        <content type="html"><![CDATA[<p>基于OkHttp3.11.0</p>
 <pre><code>implementation(&quot;com.squareup.okhttp3:okhttp:3.11.0&quot;)
 </code></pre>
 <p>网络框架的核心思想都是构建基本的执行单元之后(1)，根据任务类型放入对应的任务队列里(2)，再由线程池去执行(3)。OKHttp也不列外。</p>
@@ -2774,8 +2772,7 @@ fruitList.add(new Orange());
         <link href="https://philadelphia.github.io/post/android-zhong-activity-shu-ju-de-bao-cun-he-hui-fu">
         </link>
         <updated>2019-08-16T10:03:02.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="android中activity数据的保存和恢复">Android中Activity数据的保存和恢复</h1>
-<p>在我们的APP使用的过程中，总有可能出现各种手滑、被压在后台、甚至突然被杀死的情况。所以对APP中一些临时数据或关键持久型数据，就需要我们使用正确的方式进行保存或恢复。</p>
+        <content type="html"><![CDATA[<p>在我们的APP使用的过程中，总有可能出现各种手滑、被压在后台、甚至突然被杀死的情况。所以对APP中一些临时数据或关键持久型数据，就需要我们使用正确的方式进行保存或恢复。</p>
 <p>突发情况都有哪些？</p>
 <p>因为本文讨论的是当一些突发情况的出现时，对数据的保存和恢复。所以现在总结一下突发情况应该都有哪些？</p>
 <pre><code>1. 点击back键
@@ -2991,8 +2988,7 @@ onPuase的解释是：onPause(), onStop(), onDestroy() are &quot;killable after&
         <link href="https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi">
         </link>
         <updated>2019-08-16T10:02:47.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="android-系统的事件分发机制分析">Android 系统的事件分发机制分析</h1>
-<p>Android中可以相应事件的控件有View和ViewGroup。其实ViewGroup也是一种View。只不过大部分情况下ViewGroup作为一种View容器来使用了。<br>
+        <content type="html"><![CDATA[<p>Android中可以相应事件的控件有View和ViewGroup。其实ViewGroup也是一种View。只不过大部分情况下ViewGroup作为一种View容器来使用了。<br>
 View中有三个关键的方法</p>
 <pre><code>1. public boolean dispatchTouchEvent(MotionEvent event)		//事件分发的方法
 2. public boolean onTouchEvent(MotionEvent event)			//事件处理的方法
