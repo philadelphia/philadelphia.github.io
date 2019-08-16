@@ -1,0 +1,412 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OkHttp 源码分析 | philadelphia</title>
+<meta name="description" content="德不孤必有邻" />
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565950079495">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://philadelphia.github.io">
+  <img class="avatar" src="https://philadelphia.github.io/images/avatar.png?v=1565950079495" alt="">
+  </a>
+  <h1 class="site-title">
+    philadelphia
+  </h1>
+  <p class="site-description">
+    德不孤必有邻
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu" target="_blank">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              OkHttp 源码分析
+            </h2>
+            <div class="post-info">
+              <span>
+                2019-08-16
+              </span>
+              <span>
+                4 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <p>OkHttp 源码分析</p>
+<p>基于OkHttp3.11.0</p>
+<pre><code>implementation(&quot;com.squareup.okhttp3:okhttp:3.11.0&quot;)
+</code></pre>
+<p>网络框架的核心思想都是构建基本的执行单元之后(1)，根据任务类型放入对应的任务队列里(2)，再由线程池去执行(3)。OKHttp也不列外。</p>
+<h1 id="初始化okhttpclient">初始化OKHttpClient</h1>
+<p>OKHttpclient采用了Builder模式创建</p>
+<pre><code class="language-java">OkHttpClient okHttpClient = new OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .writeTimeout(5, TimeUnit.SECONDS)
+        .build();
+</code></pre>
+<h1 id="构建执行单元">构建执行单元</h1>
+<h2 id="1get请求">1：GET请求</h2>
+<pre><code class="language-java">Request request = new Request.Builder().url(&quot;www.baidu.com&quot;)
+        .get() // 默认就是get请求
+        .build();
+</code></pre>
+<h2 id="2-post请求">2: POST请求</h2>
+<p>POST与GET多了一个body。</p>
+<pre><code class="language-java">FormBody body = new FormBody.Builder()
+        .add(&quot;key&quot;, &quot;value&quot;)
+        .add(&quot;key1&quot;, &quot;value1&quot;)
+        .build();
+
+Request post = new Request.Builder().url(&quot;www.baidu.com&quot;)
+        .post(body)
+        .build();
+</code></pre>
+<h1 id="执行">执行</h1>
+<h2 id="1同步执行">1：同步执行</h2>
+<pre><code class="language-Java">try {
+    Response response = okHttpClient.newCall(post).execute();
+    if (response.code() ==  200){
+     	 }
+
+} catch (IOException e) {
+
+}
+</code></pre>
+<p>然后就可以根据response的结果操作了。</p>
+<h2 id="2异步执行">2：异步执行</h2>
+<pre><code class="language-java">okHttpClient.newCall(request).enqueue(new Callback() {
+    @Override
+    public void onFailure(Call call, IOException e) {
+        
+    }
+
+    @Override
+    public void onResponse(Call call, Response response) throws IOException {
+
+    }
+});
+</code></pre>
+<p>在对应的回调函数里做对应的业务逻辑。</p>
+<p>以上就是OKHttp的使用的基本使用。</p>
+<p>这里Request就是请求单元,不论是同步执行还是异步执行，都调用okHttpClient.newCall(request) 生成了一个RealCall对象，然后分别调用该对象的execute(同步执行)方法或者enqueue(异步执行)方法。</p>
+<pre><code class="language-Java">@Override public Call newCall(Request request) {
+  return RealCall.newRealCall(this, request, false /* for web socket */);
+}
+</code></pre>
+<p>OKHttp的newCall方法调用RealCall的静态方法newRealCall().</p>
+<pre><code class="language-Java">static RealCall newRealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
+  // Safely publish the Call instance to the EventListener.
+  RealCall call = new RealCall(client, originalRequest, forWebSocket);
+  call.eventListener = client.eventListenerFactory().create(call);
+  return call;
+}
+</code></pre>
+<pre><code class="language-Java">private RealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
+  this.client = client;
+  this.originalRequest = originalRequest;
+  this.forWebSocket = forWebSocket;
+  this.retryAndFollowUpInterceptor = new RetryAndFollowUpInterceptor(client, forWebSocket);
+}
+</code></pre>
+<p>可以看到，newRealCall方法将client作为自己构造函数的参数传入</p>
+<p>下面这个方法是RealCall对象的execute方法</p>
+<pre><code>@Override public Response execute() throws IOException {
+  synchronized (this) {
+    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
+    executed = true;
+  }
+  captureCallStackTrace();
+  eventListener.callStart(this);
+  try {
+    client.dispatcher().executed(this);
+    Response result = getResponseWithInterceptorChain();
+    if (result == null) throw new IOException(&quot;Canceled&quot;);
+    return result;
+  } catch (IOException e) {
+    eventListener.callFailed(this, e);
+    throw e;
+  } finally {
+    client.dispatcher().finished(this);
+  }
+}
+</code></pre>
+<p>可以看到调用了 client.dispatcher().executed(this);</p>
+<p>最中调用 Response result = getResponseWithInterceptorChain();并返回Result对象</p>
+<p>如果发生了异常则调用    eventListener.callFailed(this, e);</p>
+<p>而最终这会调用    client.dispatcher().finished(this)，来结束这个call。</p>
+<p>这里面有一个很重要的类Dispatcher，它是OKHttpclient的一个内部成员，同时OKHttpclient是request的内部成员</p>
+<pre><code class="language-java">public final class Dispatcher {
+      private int maxRequests = 64;  //最大的请求数量
+      private int maxRequestsPerHost = 5; //同义主机同时支持的最大请求数
+      private @Nullable Runnable idleCallback;
+
+      /** Executes calls. Created lazily. */
+      private @Nullable ExecutorService executorService;
+
+      /** Ready async calls in the order they'll be run. */
+      private final Deque&lt;AsyncCall&gt; readyAsyncCalls = new ArrayDeque&lt;&gt;();//准备执行的异步任务队列
+
+      /** Running asynchronous calls. Includes canceled calls that haven't finished yet. */
+      private final Deque&lt;AsyncCall&gt; runningAsyncCalls = new ArrayDeque&lt;&gt;(); //正在执行的异步任务队列
+
+      /** Running synchronous calls. Includes canceled calls that haven't finished yet. */
+      private final Deque&lt;RealCall&gt; runningSyncCalls = new ArrayDeque&lt;&gt;(); //正在运行的同步任务队列
+  
+  }
+</code></pre>
+<p>分别看到，这个类的同步执行方法是</p>
+<pre><code>synchronized void executed(RealCall call) {
+  runningSyncCalls.add(call);
+}
+</code></pre>
+<p>将改call假如同步执行队列中。</p>
+<pre><code>synchronized void enqueue(AsyncCall call) {
+  if (runningAsyncCalls.size() &lt; maxRequests &amp;&amp; runningCallsForHost(call) &lt; maxRequestsPerHost) {
+    runningAsyncCalls.add(call);
+    executorService().execute(call);
+  } else {
+    readyAsyncCalls.add(call);
+  }
+}
+</code></pre>
+<p>异步执行方法是先进行判断，只有正在执行的异步任务队列长度小于了最大的请求数并且改请求的主机的正在请求数量小于每个主句的同时的最大连接数世才将改请求加入到正在执行的异步任务队列里，然后由具体的执行任务来执行这个请求任务。</p>
+<p>不然就把这个任务加入到待执行的异步执行队队列。</p>
+<p>这里RealCall 对象突然就变成了一个AsyncCall对象</p>
+<pre><code class="language-Java">@Override public void enqueue(Callback responseCallback) {
+  synchronized (this) {
+    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
+    executed = true;
+  }
+  captureCallStackTrace();
+  eventListener.callStart(this);
+  client.dispatcher().enqueue(new AsyncCall(responseCallback));
+}
+</code></pre>
+<p>在RealCall执行enqueue方法时将一个回调对象作为构造参数生成了一个AsyncCall对象，传入了Dispatcher的enqueue方法。</p>
+<pre><code class="language-java">final class AsyncCall extends NamedRunnable {
+      private final Callback responseCallback;
+
+      AsyncCall(Callback responseCallback) {
+        super(&quot;OkHttp %s&quot;, redactedUrl());
+        this.responseCallback = responseCallback;
+      }
+  }
+</code></pre>
+<p>Async对象其实继承了NamedRunnable。而NamedRunnable实现了Runnable接口，可以看出其实Async其实就是一个命名后的runnable对象。</p>
+<p>这里把RealCall同步执行和异步执行的代码列出来</p>
+<p>1：同步执行</p>
+<pre><code class="language-Java">@Override public Response execute() throws IOException {
+  synchronized (this) {
+    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
+    executed = true;
+  }
+  captureCallStackTrace();
+  eventListener.callStart(this);
+  try {
+    client.dispatcher().executed(this);
+    Response result = getResponseWithInterceptorChain();
+    if (result == null) throw new IOException(&quot;Canceled&quot;);
+    return result;
+  } catch (IOException e) {
+    eventListener.callFailed(this, e);
+    throw e;
+  } finally {
+    client.dispatcher().finished(this);
+  }
+}
+</code></pre>
+<p>2：异步执行</p>
+<p>最终调用AsyncCall对象的execute方法</p>
+<pre><code>@Override protected void execute() {
+    boolean signalledCallback = false;
+    try {
+      Response response = getResponseWithInterceptorChain();
+      if (retryAndFollowUpInterceptor.isCanceled()) {
+        signalledCallback = true;
+        responseCallback.onFailure(RealCall.this, new IOException(&quot;Canceled&quot;));
+      } else {
+        signalledCallback = true;
+        responseCallback.onResponse(RealCall.this, response);
+      }
+    } catch (IOException e) {
+      if (signalledCallback) {
+        // Do not signal the callback twice!
+        Platform.get().log(INFO, &quot;Callback failure for &quot; + toLoggableString(), e);
+      } else {
+        eventListener.callFailed(RealCall.this, e);
+        responseCallback.onFailure(RealCall.this, e);
+      }
+    } finally {
+      client.dispatcher().finished(this);
+    }
+  }
+}
+</code></pre>
+<p>可以看出不管是同步执行还是异步执行，最终都是调用getResponseWithInterceptorChain();</p>
+<p>方法得出Response</p>
+<pre><code class="language-Java">Response getResponseWithInterceptorChain() throws IOException {
+  // Build a full stack of interceptors.
+  List&lt;Interceptor&gt; interceptors = new ArrayList&lt;&gt;();
+  interceptors.addAll(client.interceptors());
+  interceptors.add(retryAndFollowUpInterceptor);
+  interceptors.add(new BridgeInterceptor(client.cookieJar()));
+  interceptors.add(new CacheInterceptor(client.internalCache()));
+  interceptors.add(new ConnectInterceptor(client));
+  if (!forWebSocket) {
+    interceptors.addAll(client.networkInterceptors());
+  }
+  interceptors.add(new CallServerInterceptor(forWebSocket));
+
+  Interceptor.Chain chain = new RealInterceptorChain(interceptors, null, null, null, 0,
+      originalRequest, this, eventListener, client.connectTimeoutMillis(),
+      client.readTimeoutMillis(), client.writeTimeoutMillis());
+
+  return chain.proceed(originalRequest);
+}
+</code></pre>
+<p>在这个方法里首先将用户添加到OKHttpClient上的应用拦截器添加到拦截器列表里。然后一次添加重试重定向拦截器, 头部信息处理拦截器，缓存拦截器， 连接拦截器，然后再加上OKhttpclient配置的网络拦截器，最后添加最终发起请求的拦截器。</p>
+<p>拦截器这里使用了不完整的责任链模式，依次处理返回的response，最后返回最终的response。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E5%88%9D%E5%A7%8B%E5%8C%96okhttpclient">初始化OKHttpClient</a></li>
+<li><a href="#%E6%9E%84%E5%BB%BA%E6%89%A7%E8%A1%8C%E5%8D%95%E5%85%83">构建执行单元</a>
+<ul>
+<li><a href="#1get%E8%AF%B7%E6%B1%82">1：GET请求</a></li>
+<li><a href="#2-post%E8%AF%B7%E6%B1%82">2: POST请求</a></li>
+</ul>
+</li>
+<li><a href="#%E6%89%A7%E8%A1%8C">执行</a>
+<ul>
+<li><a href="#1%E5%90%8C%E6%AD%A5%E6%89%A7%E8%A1%8C">1：同步执行</a></li>
+<li><a href="#2%E5%BC%82%E6%AD%A5%E6%89%A7%E8%A1%8C">2：异步执行</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://philadelphia.github.io/post/javadong-tai-bang-ding">
+              <h3 class="post-title">
+                Java:动态绑定
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      console.log('section.offsetHeight', section.offsetHeight);
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,547 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Retrofit2.0简介 | philadelphia</title>
+<meta name="description" content="德不孤必有邻" />
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565950079495">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://philadelphia.github.io">
+  <img class="avatar" src="https://philadelphia.github.io/images/avatar.png?v=1565950079495" alt="">
+  </a>
+  <h1 class="site-title">
+    philadelphia
+  </h1>
+  <p class="site-description">
+    德不孤必有邻
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu" target="_blank">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Retrofit2.0简介
+            </h2>
+            <div class="post-info">
+              <span>
+                2019-08-16
+              </span>
+              <span>
+                5 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="retrofit-20">Retrofit 2.0</h1>
+<h2 id="1定义">1.定义</h2>
+<p>官方的Retrofit主页是这样描述它的</p>
+<blockquote>
+<p>A type-safe HTTP client for Android and Java</p>
+</blockquote>
+<blockquote>
+<p>用于Android和Java的一个类型安全(type-safe)的REST客户端</p>
+</blockquote>
+<p>你可以使用注解去描述HTTP请求，同时Retrofit默认集成URL参数替换和查询参数.除此之外它还支持 Multipart请求和文件上传。</p>
+<h2 id="2使用">2.使用</h2>
+<p>注意这个任务是网络任务，不要忘记给程序加入网络权限</p>
+<pre><code>&lt;uses-permission android:name=&quot;android.permission.INTERNET&quot; /&gt;
+</code></pre>
+<p>build.gradle</p>
+<pre><code>dependencies { 
+ // Retrofit &amp;amp; OkHttp
+compile 'com.squareup.retrofit:retrofit:2.0.0-beta2'
+}
+</code></pre>
+<p><code>Retrofit</code> 需要最低<code>JDK 1.7</code> 和 <code>Android 2.3</code>.</p>
+<p>retfofit 使用注解的方式定义API</p>
+<p>方法类型有：</p>
+<blockquote>
+<p>GET, POST, PUT, DELETE, HEAD</p>
+</blockquote>
+<p>1	声明API</p>
+<pre><code>public interface GitHubService {
+  @GET(&quot;users/{user}/repos&quot;)
+  Call&lt;List&lt;Repo&gt;&gt; listRepos(@Path(&quot;user&quot;) String user);
+}
+</code></pre>
+<p>2	初始化Retrofit</p>
+<pre><code>Retrofit retrofit = new Retrofit.Builder()
+.baseUrl(&quot;https://api.github.com/&quot;)
+.build();
+
+GitHubService service = retrofit.create(GitHubService.class);
+Call&lt;List&lt;Repo&gt;&gt; repos = service.listRepos(&quot;octocat&quot;);    
+</code></pre>
+<p>3	发起请求：</p>
+<p>//同步请求</p>
+<pre><code>try {
+  Response&lt;List&lt;Repo&gt;&gt; bodyResponse = call.execute();
+  String body = bodyResponse.body().string();//获取返回体的字符串
+  Log.i(&quot;wxl&quot;, &quot;body=&quot; + body);
+  } catch (IOException e) {
+  e.printStackTrace();
+  }
+</code></pre>
+<p>//异步请求</p>
+<pre><code>call.enqueue(new Callback&lt;List&lt;Repo&gt;&gt;() {
+            @Override
+            public void onResponse(Response&lt;List&lt;Repo&gt;&gt; response) {
+                try {
+                    Log.i(&quot;wxl&quot;, &quot;response=&quot; + response.body().string());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override
+            public void onFailure(Throwable t) {
+                Log.i(&quot;wxl&quot;, &quot;onFailure=&quot; + t.getMessage());
+            }
+        });
+</code></pre>
+<p>4 取消请求</p>
+<pre><code>call.cancel();
+</code></pre>
+<p>所有的请求方法都是按照上述类型执行。<br>
+在方法声明时注解@GET，@POST,@PUT 分别对应方法的类型。</p>
+<p>接口参数</p>
+<blockquote>
+<p>Path</p>
+</blockquote>
+<p>ApiStores</p>
+<pre><code> /**
+ * Call&lt;T&gt; get();必须是这种形式,这是2.0之后的新形式
+ * 如果不需要转换成Json数据,可以用了ResponseBody;
+ * 你也可以使用Call&lt;GsonBean&gt; get();这样的话,需要添加Gson转换器
+ */
+public interface ApiStores {
+    @GET(&quot;adat/sk/{cityId}.html&quot;)
+    Call&lt;ResponseBody&gt; getWeather(@Path(&quot;cityId&quot;) String cityId);
+}
+</code></pre>
+<blockquote>
+<p>Query</p>
+</blockquote>
+<p>如果链接是http://ip.taobao.com/service/getIpInfo.php?ip=202.202.33.33</p>
+<p>ApiStores</p>
+<pre><code>public interface ApiStores {
+	@GET(&quot;http://ip.taobao.com/service/getIpInfo.php&quot;)
+	Call&lt;ResponseBody&gt; getWeather(@Query(&quot;ip&quot;) String ip);
+</code></pre>
+<p>复杂的查询参数也可以使用Map。</p>
+<pre><code>@GET(&quot;group/{id}/users&quot;)
+Call&lt;List&lt;User&gt;&gt; groupList(@Path(&quot;id&quot;) int groupId, @QueryMap Map&lt;String, String&gt; options);
+</code></pre>
+<blockquote>
+<p>Headers</p>
+</blockquote>
+<p>你可以通过@Headers参数来设置静态headers</p>
+<pre><code>@Headers(&quot;Cache-Control: max-age=640000&quot;)
+@GET(&quot;widget/list&quot;)
+Call&lt;List&lt;Widget&gt;&gt; widgetList();
+
+@Headers({
+    &quot;Accept: application/vnd.github.v3.full+json&quot;,
+    &quot;User-Agent: Retrofit-Sample-App&quot;
+})
+@GET(&quot;users/{username}&quot;)
+Call&lt;User&gt; getUser(@Path(&quot;username&quot;) String username);
+</code></pre>
+<p><code>Headers</code>不复写其他的<code>Headers</code>值。所有同名的的<code>Headers</code>参数都将包含在该请求中。<br>
+Request的Header可以通过使用<code>@Header</code>注解动态更新。必须给<code>@Header</code>提供一个相应的参数。如果该值为空，该<code>Header</code>就被忽略了。不然就会调用value的<code>toString()</code>方法获得value的值。</p>
+<pre><code>@GET(&quot;user&quot;)
+Call&lt;User&gt; getUser(@Header(&quot;Authorization&quot;) String authorization)
+</code></pre>
+<p>每一个request都有的header可以通过设置<code>OkHttp interceptor</code>来统一添加。</p>
+<blockquote>
+<p>Body</p>
+</blockquote>
+<p>这是针对POST方式，如果参数是json格式，如：</p>
+<pre><code>{		
+    &quot;apiInfo&quot;: {		
+        &quot;apiName&quot;: &quot;WuXiaolong&quot;,		
+        &quot;apiKey&quot;: &quot;666&quot;		
+    }		
+}
+</code></pre>
+<p>ApiStores</p>
+<pre><code>public interface ApiStores {
+    @POST(&quot;client/shipper/getCarType&quot;)
+    Call&lt;ResponseBody&gt; getCarType(@Body ApiInfo apiInfo);
+   }
+</code></pre>
+<p>这个<code>Object</code>将被<code>Retrofit</code>对象所指定的<code>Converter</code>所转换，如果没有指定转换器，只能使用<code>RequestBody</code>来定义参数。</p>
+<p>建立Bean</p>
+<pre><code>public class ApiInfo {
+       private ApiInfoBean apiInfo;
+       public ApiInfoBean getApiInfo() {
+           return apiInfo;
+       }
+       public void setApiInfo(ApiInfoBean apiInfo) {
+           this.apiInfo = apiInfo;
+       }
+       public class ApiInfoBean {
+           private String apiName;
+           private String apiKey;
+           //省略get和set方法
+       }
+   }
+</code></pre>
+<p>代码调用</p>
+<pre><code>private void getCarType() {
+   mRetrofit = new Retrofit.Builder()
+           .baseUrl(&quot;http://WuXiaolong.me/&quot;)
+           .addConverterFactory(GsonConverterFactory.create())
+           .build();
+   ApiStores apiStores = mRetrofit.create(ApiStores.class);
+   ApiInfo apiInfo = new ApiInfo();
+   ApiInfo.ApiInfoBean apiInfoBean = apiInfo.new ApiInfoBean();
+   apiInfoBean.setApiKey(&quot;666&quot;);
+   apiInfoBean.setApiName(&quot;WuXiaolong&quot;);
+   apiInfo.setApiInfo(apiInfoBean);
+   Call&lt;ResponseBody&gt; call = apiStores.getCarType(apiInfo);
+   call.enqueue(new Callback&lt;ResponseBody&gt;() {
+       @Override
+       public void onResponse(Response&lt;ResponseBody&gt; response) {
+           String body = null;//获取返回体的字符串
+           try {
+               body = response.body().string();
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+           Log.i(&quot;wxl&quot;, &quot;get=&quot; + body);
+       }
+       @Override
+       public void onFailure( Throwable t) {
+       }
+   });
+   }
+</code></pre>
+<blockquote>
+<p>Url encode</p>
+</blockquote>
+<p>POST or PUT Url encode 過的表單資料，用@FormUrlEncoded，使用@Field個別指定</p>
+<pre><code>@POST(&quot;/articles/{article_id}/comments&quot;)
+@FormUrlEncoded
+Comment create(
+@Path(&quot;article_id&quot;) int articleId,
+@Field(&quot;rating&quot;) int rating,
+@Field(&quot;content&quot;) String content
+);
+</code></pre>
+<p>POST or PUT Url encode 過的表單資料，用@FormUrlEncoded，參數也可用@Body傳</p>
+<pre><code>@POST(&quot;/articles/{article_id}/comments&quot;)
+@FormUrlEncoded
+Comment create(
+    @Path(&quot;article_id&quot;) int articleId,
+    @Body Comment comment
+);
+</code></pre>
+<blockquote>
+<p>POST or PUT 用@Multipart來上傳檔案</p>
+</blockquote>
+<pre><code>@PUT(&quot;/me&quot;)
+@Multipart
+Me update(
+    @Part(&quot;display_name&quot;) String displayName,
+    @Part(&quot;avatar&quot;) TypedFile avatar
+);
+</code></pre>
+<p>更详细的信息，请点击：<a href="http://www.chenkaihua.com/2016/04/02/retrofit2-upload-multipart-files/">http://www.chenkaihua.com/2016/04/02/retrofit2-upload-multipart-files/</a></p>
+<p>更多更有效的 Converters</p>
+<blockquote>
+<p>默认情况下，<code>Retrofit</code> 只能反序列化<code>HTTP</code> body到<code>OKHTTP</code>的<code>ResponseBody</code>类型。并且<code>OKHTTP</code>只接受<code>Retrifit</code> <code>@Body</code>类型的<code>RequestBody</code><br>
+可以添加<code>Converter</code>转换器来支持其他的类型，6个相似的兼容流行的序列化库模块可以供使用。</p>
+</blockquote>
+<pre><code>Gson: com.squareup.retrofit2:converter-gson
+Jackson: com.squareup.retrofit2:converter-jackson	
+Moshi: com.squareup.retrofit2:converter-moshi
+Protobuf: com.squareup.retrofit2:converter-protobuf
+Wire: com.squareup.retrofit2:converter-wire
+Simple XML: com.squareup.retrofit2:converter-simplexml	
+Scalars (primitives, boxed, and String): com.squareup.retrofit2:converter-scalars
+</code></pre>
+<p>例子:</p>
+<pre><code>interface which uses Gson for its deserialization.
+
+Retrofit retrofit = new Retrofit.Builder()
+    .baseUrl(&quot;https://api.github.com&quot;)
+    .addConverterFactory(GsonConverterFactory.create())
+    .build();
+
+GitHubService service = retrofit.create(GitHubService.class);
+</code></pre>
+<blockquote>
+<p>Retrofit 1 里有一个 converter 的问题。多数人可能没遇到过，是库内部的一个问题。在 Retrofit 2 里，已经解决了这个问题，同时开始支持多种 Converter 并存。</p>
+</blockquote>
+<blockquote>
+<p>在之前，如果你遇到这种情况：一个 API 请求返回的结果需要通过 JSON 反序列化，另一个 API 请求需要通过 proto 反序列化，唯一的解决方&gt;案就是将两个接口分离开声明。</p>
+</blockquote>
+<pre><code>interface SomeProtoService {
+  @GET(&quot;/some/proto/endpoint&quot;)
+  Call&lt;SomeProtoResponse&gt; someProtoEndpoint();
+}
+
+interface SomeJsonService {
+  @GET(&quot;/some/json/endpoint&quot;)
+  Call&lt;SomeJsonResponse&gt; someJsonEndpoint();
+</code></pre>
+<blockquote>
+<p>之所以搞得这么麻烦是因为一个 REST adapter 只能绑定一个 Converter 对象。我们费工夫去解决这个是因为：接口的声明是要语意化的。API 接口应该通过功能实现分组，比如： account 的接口，user 的接口，或者 Twitter 相关的接口。返回格式的差异不应该成为你分组时候的阻碍。</p>
+</blockquote>
+<blockquote>
+<p>现在，你可以把他们都放在一起了：</p>
+</blockquote>
+<pre><code>interface SomeService {
+  @GET(&quot;/some/proto/endpoint&quot;)
+  Call&lt;SomeProtoResponse&gt; someProtoEndpoint();
+
+  @GET(&quot;/some/json/endpoint&quot;)
+  Call&lt;SomeJsonResponse&gt; someJsonEndpoint();
+}
+</code></pre>
+<blockquote>
+<p>SomeProtoResponse —&gt; Proto? Yes!</p>
+</blockquote>
+<blockquote>
+<p>原理很简单，其实就是对着每一个 converter 询问他们是否能够处理某种类型。我们问 proto 的 converter： “Hi, 你能处理 SomeProtoResponse 吗？”，然后它尽可能的去判断它是否可以处理这种类型。我们都知道：Protobuff 都是从一个名叫 message 或者 message lite 的类继承而来。所以，判断方法通常就是检查这个类是否继承自 message。<br>
+在面对 JSON 类型的时候，首先问 proto converter，proto converter 会发现这个不是继承子 Message 的，然后回复 no。紧接着移到下一个 JSON converter 上。JSON Converter 会回复说我可以！</p>
+</blockquote>
+<blockquote>
+<p>SomeJsonResponse —&gt; Proto? No! —&gt; JSON? Yes!</p>
+</blockquote>
+<blockquote>
+<p>因为 JSON 并没有什么继承上的约束。所以我们无法通过什么确切的条件来判断一个对象是否是 JSON 对象。以至于 JSON 的 converters 会对任何数据都回复说：我可以处理！这个一定要记住， JSON converter 一定要放在最后，不然会和你的预期不符。</p>
+<p>另一个要注意的是，现在已经不提供默认的 converter 了。如果不显性的声明一个可用的 Converter 的话，Retrofit 是会报错的：提醒你没有可用的 Converter。因为核心代码已经不依赖序列化相关的第三方库了，我们依然提供对 Converter 的支持，不过你需要自己引入这些依赖，同时显性的声明 Retrofit 需要用的 Converter 有哪些。<br>
+添加 converter 的顺序很重要。按照这个顺序，我们将依次询问每一个 converter 能否处理一个类型。我上面写的其实是错的。如果我们试图反序列化一个 proto 格式，它其实会被当做 JSON 来对待。这显然不是我们想要的。我们需要调整下顺序，因为我们先要检查 proto buffer 格式，然后才是 JSON。</p>
+</blockquote>
+<pre><code>Retrofit retrofit = new Retrofit.Builder()
+.baseUrl(&quot;https://api.github.com&quot;)
+.addConverterFactory(ProtoConverterFactory.create())
+.addConverterFactory(GsonConverterFactory.create())
+.build();
+</code></pre>
+<blockquote>
+<p>由于现在Retrofit开始依赖 OkHttp， 并没有 Http Client 层的抽象。现在是可以传递一个配置好的 OkHttp 实例的。比如：配置 interceptors, 或者一个 SSL socket 工厂类， 或者 timeouts 的具体数值。 （OkHttp 有默认的超时机制，如果你不需要自定义，实际上不&gt;必进行任何设置，但是如果你想要去设置它们，下面是一个例子告诉你来怎么操作。）</p>
+</blockquote>
+<pre><code> OkHttpClient client = new OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)			//失败后是否重试
+            .connectTimeout(15, TimeUnit.SECONDS)	//设置连接超时时间
+            .addInterceptor(getHttpInterceptor())	//设置应用拦截器
+            .build();
+
+Retrofit retrofit = new Retrofit.Builder()
+    .baseUrl(&quot;https://api.github.com&quot;)	//设置BaseURL
+    .client(client)						//设置client
+    .build();
+</code></pre>
+<h2 id="3-interceptor">3 Interceptor</h2>
+<blockquote>
+<p>在使用Android retrofit+rxjava时，想获知网络请求的一些参数，方便调试，比如：请求地址、请求响应时间、请求响应消息体等内容，虽然部分可以通过每个接口进行获知，但是这样极其不方便，可以使用拦截器来做统一的操作。</p>
+</blockquote>
+<p>添加拦截器：<br>
+可以针对OkHttpClient.Builder 添加拦截器</p>
+<pre><code>HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);	//设置日志级别
+
+OkHttpClient client = new OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)			//失败后是否重试
+            .connectTimeout(15, TimeUnit.SECONDS)	//设置连接超时时间
+            .addInterceptor(interceptor)	//设置应用拦截器
+            .build();
+</code></pre>
+<h2 id="4cache">4.Cache</h2>
+<blockquote>
+<p>开启OKHttp缓存：</p>
+</blockquote>
+<p>先获取系统外部存储的路径，”xxx”可以自己命名，缓存文件就存在 Android/data/&lt;包名&gt;/cache/resposes。</p>
+<pre><code>File httpCacheDirectory = new File(UIUtils.getContext().getExternalCacheDir(), &quot;xxx&quot;); 
+client.setCache(new Cache(httpCacheDirectory,10 * 1024 * 1024));
+</code></pre>
+<h2 id="5proguard">5.Proguard</h2>
+<blockquote>
+<p>如果你在你的代码里使用代码混淆机制,请在你的配置里添加下面几行.</p>
+</blockquote>
+<pre><code># Platform calls Class.forName on types which do not exist on Android to determine platform.
+-dontnote retrofit2.Platform
+# Platform used when running on RoboVM on iOS. Will not be used at runtime.
+-dontnote retrofit2.Platform$IOS$MainThreadExecutor
+# Platform used when running on Java 8 VMs. Will not be used at runtime.
+-dontwarn retrofit2.Platform$Java8
+# Retain generic type information for use by reflection by converters and adapters.
+-keepattributes Signature
+# Retain declared checked exceptions for use by a Proxy instance.
+-keepattributes Exceptions
+</code></pre>
+<h2 id="6-nitoice">6 Nitoice</h2>
+<blockquote>
+<p>Retrofit 在请求失败时依然会回调 <code>onResponse()</code>方法。及时response code不是200依然会回调一下方法，需要注意。</p>
+</blockquote>
+<pre><code> public void onResponse(Call&lt;LoginResult&gt; call, Response&lt;LoginResult&gt; response) {
+	 
+}
+</code></pre>
+<h2 id="7references">7:References</h2>
+<ol>
+<li>
+<p>Retrofit github主页：<a href="https://square.github.io/retrofit/" title="retrofit github 主页">https://square.github.io/retrofit/</a></p>
+</li>
+<li>
+<p>Interceptor wiki:	<a href="https://github.com/square/okhttp/wiki/Interceptors" title="retrofit interceptor">https://github.com/square/okhttp/wiki/Interceptors</a></p>
+</li>
+<li>
+<p>用 Retrofit 2 简化 HTTP 请求	<a href="https://realm.io/cn/news/droidcon-jake-wharton-simple-http-retrofit-2/"> https://realm.io/cn/news/droidcon-jake-wharton-simple-http-retrofit-2/</a></p>
+</li>
+<li>
+<p>Http Caching:		<a href="https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=zh-cn" title="Http Cache">https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=zh-cn</a></p>
+</li>
+<li>
+<p>四种常见的 POST 提交数据方式		<a href="https://imququ.com/post/four-ways-to-post-data-in-http.html" title="四种常见的 POST 提交数据方式">https://imququ.com/post/four-ways-to-post-data-in-http.html</a></p>
+</li>
+<li>
+<p>Blog				 <a href="http://wuxiaolong.me/2016/01/15/retrofit/" title="Blog"> http://wuxiaolong.me/2016/01/15/retrofit/</a></p>
+</li>
+<li>
+<p>URL wikipedia: 		<a href="https://zh.wikipedia.org/wiki/%E7%BB%9F%E4%B8%80%E8%B5%84%E6%BA%90%E5%AE%9A%E4%BD%8D%E7%AC%A6" title="URL wikipedia: ">https://zh.wikipedia.org/wiki/%E7%BB%9F%E4%B8%80%E8%B5%84%E6%BA%90%E5%AE%9A%E4%BD%8D%E7%AC%A6</a></p>
+</li>
+</ol>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#retrofit-20">Retrofit 2.0</a>
+<ul>
+<li><a href="#1%E5%AE%9A%E4%B9%89">1.定义</a></li>
+<li><a href="#2%E4%BD%BF%E7%94%A8">2.使用</a></li>
+<li><a href="#3-interceptor">3 Interceptor</a></li>
+<li><a href="#4cache">4.Cache</a></li>
+<li><a href="#5proguard">5.Proguard</a></li>
+<li><a href="#6-nitoice">6 Nitoice</a></li>
+<li><a href="#7references">7:References</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://philadelphia.github.io/post/retrofit-ji-chong-apiservice-jie-kou-ding-yi-de-qu-bie">
+              <h3 class="post-title">
+                Retrofit: 几种ApiService接口定义的区别
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      console.log('section.offsetHeight', section.offsetHeight);
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>

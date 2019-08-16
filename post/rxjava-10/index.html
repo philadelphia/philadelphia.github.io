@@ -1,0 +1,570 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RxJava 1.0 | philadelphia</title>
+<meta name="description" content="德不孤必有邻" />
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565950079495">
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://philadelphia.github.io">
+  <img class="avatar" src="https://philadelphia.github.io/images/avatar.png?v=1565950079495" alt="">
+  </a>
+  <h1 class="site-title">
+    philadelphia
+  </h1>
+  <p class="site-description">
+    德不孤必有邻
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu" target="_blank">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              RxJava 1.0
+            </h2>
+            <div class="post-info">
+              <span>
+                2019-08-16
+              </span>
+              <span>
+                7 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h2 id="function">Function</h2>
+<p>Function 是Action和Func的父接口。</p>
+<pre><code>/**
+ * All Func and Action interfaces extend from this.
+ * &lt;p&gt;
+ * Marker interface to allow instanceof checks.
+ */
+public interface Function {
+
+}
+</code></pre>
+<h2 id="action">Action</h2>
+<pre><code>/**
+ * All Action interfaces extend from this.
+ * &lt;p&gt;
+ * Marker interface to allow instanceof checks.
+ */
+public interface Action extends Function {
+
+}
+</code></pre>
+<p>Action0 是 RxJava 的一个接口，它只有一个方法 call()，这个方法是无参无返回值的；</p>
+<p>Action 接口有以下子接口，<br>
+Action1,Action2------Action9,ActionN</p>
+<pre><code>public interface Action1&lt;T&gt; extends Action {
+	void call(T t);
+}
+
+public interface Action2&lt;T1, T2&gt; extends Action {
+	void call(T1 t1, T2 t2);
+}
+
+public interface ActionN extends Action {
+	void call(Object... args);
+}
+</code></pre>
+<h2 id="func">Func</h2>
+<pre><code>Func接口几次Function接口和Callable接口，并复写Callable接口的call方法。
+Func0接口没有参数，只有返回值，
+Func1有一个参数，
+Func2有两个参数。
+.
+.
+.
+Func9有9个参数，
+以此类推，FuncN有N个参数
+
+
+/**
+ * Represents a function with zero arguments.
+ */
+public interface Func0&lt;R&gt; extends Function, Callable&lt;R&gt; {
+	@Override
+	R call();
+}
+
+/**
+ * Represents a function with one argument.
+ */
+public interface Func1&lt;T, R&gt; extends Function {
+	R call(T t);
+}
+
+/**
+ * A vector-argument action.
+ */
+public interface Func9&lt;T1, T2, T3, T4, T5, T6, T7, T8, T9, R&gt; extends Function {
+	R call(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9);
+}
+</code></pre>
+<p>在创建Observable以后，我们可以通过Observable.subscribe(final Action1&lt;? super T&gt; onNext, final Action1<Throwable> onError, final Action0 onCompleted)</p>
+<p>如果我们只传递onNext，onError和onComplete会使用系统默认的。</p>
+<pre><code>public final Subscription subscribe(final Action1&lt;? super T&gt; onNext) {
+    if (onNext == null) {
+        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
+    }
+
+    Action1&lt;Throwable&gt; onError = InternalObservableUtils.ERROR_NOT_IMPLEMENTED;
+    Action0 onCompleted = Actions.empty();
+    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
+}
+
+ public final Subscription subscribe(final Action1&lt;? super T&gt; onNext, final Action1&lt;Throwable&gt; onError) {
+    if (onNext == null) {
+        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
+    }
+    if (onError == null) {
+        throw new IllegalArgumentException(&quot;onError can not be null&quot;);
+    }
+
+    Action0 onCompleted = Actions.empty();
+    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
+}
+
+public final Subscription subscribe(final Action1&lt;? super T&gt; onNext, final Action1&lt;Throwable&gt; onError, final Action0 onCompleted) {
+    if (onNext == null) {
+        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
+    }
+    if (onError == null) {
+        throw new IllegalArgumentException(&quot;onError can not be null&quot;);
+    }
+    if (onCompleted == null) {
+        throw new IllegalArgumentException(&quot;onComplete can not be null&quot;);
+    }
+
+    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
+}
+</code></pre>
+<p>最终系统会将onNext,onError，onComplete，组合成一个ActionSubscriber，</p>
+<pre><code>new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted)
+/**
+ * A Subscriber that forwards the onXXX method calls to callbacks.
+ * @param &lt;T&gt; the value type
+ */
+	public final class ActionSubscriber&lt;T&gt; extends Subscriber&lt;T&gt; {
+
+    final Action1&lt;? super T&gt; onNext;
+    final Action1&lt;Throwable&gt; onError;
+    final Action0 onCompleted;
+
+    public ActionSubscriber(Action1&lt;? super T&gt; onNext, Action1&lt;Throwable&gt; onError, Action0 onCompleted) {
+        this.onNext = onNext;
+        this.onError = onError;
+        this.onCompleted = onCompleted;
+    }
+
+    @Override
+    public void onNext(T t) {
+        onNext.call(t);
+    }
+
+    @Override
+    public void onError(Throwable e) {
+        onError.call(e);
+    }
+
+    @Override
+    public void onCompleted() {
+        onCompleted.call();
+    }
+}
+</code></pre>
+<h2 id="observer">Observer</h2>
+<pre><code>public interface Observer&lt;T&gt; {
+	void onCompleted();
+
+	void onError(Throwable e);
+
+	void onNext(T t);
+</code></pre>
+<p>}</p>
+<h2 id="subscriber">Subscriber</h2>
+<p>Subscriber实现了Subscription接口，复写了其<code>unsubscribe</code>和<code>isUnsubscribed</code>方法。<br>
+在<code>Observer</code>的基础上增加了<code>onStart</code>，<code>request</code>，<code>addToRequested</code>，<code>setProducer</code>方法。</p>
+<pre><code>public abstract class Subscriber&lt;T&gt; implements Observer&lt;T&gt;, Subscription{
+
+    // represents requested not set yet
+    private static final Long NOT_SET = Long.MIN_VALUE;
+
+    private final SubscriptionList subscriptions;
+    private final Subscriber&lt;?&gt; subscriber;
+    /* protected by `this` */
+    private Producer producer;
+    /* protected by `this` */
+    private long requested = NOT_SET; // default to not set
+
+    protected Subscriber() {
+        this(null, false);
+    }
+
+
+    protected Subscriber(Subscriber&lt;?&gt; subscriber) {
+        this(subscriber, true);
+    }
+
+   
+    protected Subscriber(Subscriber&lt;?&gt; subscriber, boolean shareSubscriptions) {
+        this.subscriber = subscriber;
+        this.subscriptions = shareSubscriptions &amp;&amp; subscriber != null ? subscriber.subscriptions : new SubscriptionList();
+    }
+
+
+    public final void add(Subscription s) {
+        subscriptions.add(s);
+    }
+
+    @Override
+    public final void unsubscribe() {
+        subscriptions.unsubscribe();
+    }
+
+
+    @Override
+    public final boolean isUnsubscribed() {
+        return subscriptions.isUnsubscribed();
+    }
+
+    
+    public void onStart() {
+        // do nothing by default
+    }
+    
+    
+    protected final void request(long n) {
+        if (n &lt; 0) {
+            throw new IllegalArgumentException(&quot;number requested cannot be negative: &quot; + n);
+        } 
+        
+        // if producer is set then we will request from it
+        // otherwise we increase the requested count by n
+        Producer producerToRequestFrom = null;
+        synchronized (this) {
+            if (producer != null) {
+                producerToRequestFrom = producer;
+            } else {
+                addToRequested(n);
+                return;
+            }
+        }
+        // after releasing lock (we should not make requests holding a lock)
+        producerToRequestFrom.request(n);
+    }
+
+    private void addToRequested(long n) {
+        if (requested == NOT_SET) {
+            requested = n;
+        } else { 
+            final long total = requested + n;
+            // check if overflow occurred
+            if (total &lt; 0) {
+                requested = Long.MAX_VALUE;
+            } else {
+                requested = total;
+            }
+        }
+    }
+    
+  
+    public void setProducer(Producer p) {
+        long toRequest;
+        boolean passToSubscriber = false;
+        synchronized (this) {
+            toRequest = requested;
+            producer = p;
+            if (subscriber != null) {
+                // middle operator ... we pass through unless a request has been made
+                if (toRequest == NOT_SET) {
+                    // we pass through to the next producer as nothing has been requested
+                    passToSubscriber = true;
+                }
+            }
+        }
+        // do after releasing lock
+        if (passToSubscriber) {
+            subscriber.setProducer(producer);
+        } else {
+            // we execute the request with whatever has been requested (or Long.MAX_VALUE)
+            if (toRequest == NOT_SET) {
+                producer.request(Long.MAX_VALUE);
+            } else {
+                producer.request(toRequest);
+            }
+        }
+    }
+}
+</code></pre>
+<h2 id="observable-与observer建立绑定关系">Observable 与Observer建立绑定关系</h2>
+<p>Observable.create().subscribe(new Observer)</p>
+<pre><code>  public final Subscription subscribe(final Observer&lt;? super T&gt; observer) {
+        if (observer instanceof Subscriber) {
+            return subscribe((Subscriber&lt;? super T&gt;)observer);
+        }
+        return subscribe(new ObserverSubscriber&lt;T&gt;(observer));
+    }
+</code></pre>
+<p>如果传入的直接是一个Subscriber对象的话，直接调用subscribe（Subscriber observer）<br>
+否则调用subsribe(new ObserverSubscriber<T>(observer)),将observer构造成一个ObserverSubscriber对象传入。<br>
+其实两者都是一样的。因为<code>ObserverSubscriber</code> 也是<code>Subscriber</code>的子类。</p>
+<h2 id="observersubscriber">ObserverSubscriber</h2>
+<pre><code>	/**
+	 * Wraps an Observer and forwards the onXXX method calls to it.
+	 * @param &lt;T&gt; the value type
+	 */
+	public final class ObserverSubscriber&lt;T&gt; extends Subscriber&lt;T&gt; {
+    final Observer&lt;? super T&gt; observer;
+
+    public ObserverSubscriber(Observer&lt;? super T&gt; observer) {
+        this.observer = observer;
+    }
+    
+    @Override
+    public void onNext(T t) {
+        observer.onNext(t);
+    }
+    
+    @Override
+    public void onError(Throwable e) {
+        observer.onError(e);
+    }
+    
+    @Override
+    public void onCompleted() {
+        observer.onCompleted();
+    }
+}
+</code></pre>
+<p>该类包裹了一个Observer对象。所有的实现其实是Observer对象来操作的。</p>
+<pre><code>	 public final Subscription subscribe(Subscriber&lt;? super T&gt; subscriber) {
+	        return Observable.subscribe(subscriber, this);
+	    }
+
+
+
+    static &lt;T&gt; Subscription subscribe(Subscriber&lt;? super T&gt; subscriber, Observable&lt;T&gt; observable) {
+     // validate and proceed
+        if (subscriber == null) {
+            throw new IllegalArgumentException(&quot;observer can not be null&quot;);
+        }
+        if (observable.onSubscribe == null) {
+            throw new IllegalStateException(&quot;onSubscribe function can not be null.&quot;);
+            /*
+             * the subscribe function can also be overridden but generally that's not the appropriate approach
+             * so I won't mention that in the exception
+             */
+        }
+        
+        // new Subscriber so onStart it
+		先调用subscriber的onStart方法。
+        subscriber.onStart();
+        
+        /*
+         * See https://github.com/ReactiveX/RxJava/issues/216 for discussion on &quot;Guideline 6.4: Protect calls
+         * to user code from within an Observer&quot;
+         */
+        // if not already wrapped
+        if (!(subscriber instanceof SafeSubscriber)) {
+            // assign to `observer` so we return the protected version
+            subscriber = new SafeSubscriber&lt;T&gt;(subscriber);
+        }
+
+        // The code below is exactly the same an unsafeSubscribe but not used because it would 
+        // add a significant depth to already huge call stacks.
+        try {
+            // allow the hook to intercept and/or decorate
+            hook.onSubscribeStart(observable, observable.onSubscribe).call(subscriber);
+            return hook.onSubscribeReturn(subscriber);
+        } catch (Throwable e) {
+            // special handling for certain Throwable/Error/Exception types
+            Exceptions.throwIfFatal(e);
+            // in case the subscriber can't listen to exceptions anymore
+            if (subscriber.isUnsubscribed()) {
+                RxJavaPluginUtils.handleException(hook.onSubscribeError(e));
+            } else {
+                // if an unhandled error occurs executing the onSubscribe we will propagate it
+                try {
+                    subscriber.onError(hook.onSubscribeError(e));
+                } catch (Throwable e2) {
+                    Exceptions.throwIfFatal(e2);
+                    // if this happens it means the onError itself failed (perhaps an invalid function implementation)
+                    // so we are unable to propagate the error correctly and will just throw
+                    RuntimeException r = new OnErrorFailedException(&quot;Error occurred attempting to subscribe [&quot; + e.getMessage() + &quot;] and then again while trying to pass to onError.&quot;, e2);
+                    // TODO could the hook be the cause of the error in the on error handling.
+                    hook.onSubscribeError(r);
+                    // TODO why aren't we throwing the hook's return value.
+                    throw r;
+                }
+            }
+            return Subscriptions.unsubscribed();
+        }
+    }
+</code></pre>
+<p>该方法返回一个<code>Subscription</code>对象</p>
+<h2 id="subscription">Subscription</h2>
+<pre><code>	public interface Subscription {
+
+    /**
+     * Stops the receipt of notifications on the {@link Subscriber} that was registered when this Subscription
+     * was received.
+     * &lt;p&gt;
+     * This allows unregistering an {@link Subscriber} before it has finished receiving all events (i.e. before
+     * onCompleted is called).
+     */
+    void unsubscribe();
+
+    /**
+     * Indicates whether this {@code Subscription} is currently unsubscribed.
+     *
+     * @return {@code true} if this {@code Subscription} is currently unsubscribed, {@code false} otherwise
+     */
+    boolean isUnsubscribed();
+
+}
+</code></pre>
+<p>该接口有两个方法。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#function">Function</a></li>
+<li><a href="#action">Action</a></li>
+<li><a href="#func">Func</a></li>
+<li><a href="#observer">Observer</a></li>
+<li><a href="#subscriber">Subscriber</a></li>
+<li><a href="#observable-%E4%B8%8Eobserver%E5%BB%BA%E7%AB%8B%E7%BB%91%E5%AE%9A%E5%85%B3%E7%B3%BB">Observable 与Observer建立绑定关系</a></li>
+<li><a href="#observersubscriber">ObserverSubscriber</a></li>
+<li><a href="#subscription">Subscription</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://philadelphia.github.io/post/retrofit20-jian-jie">
+              <h3 class="post-title">
+                Retrofit2.0简介
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
+  <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+</div>
+
+<script>
+  hljs.initHighlightingOnLoad()
+
+  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+  // This should probably be throttled.
+  // Especially because it triggers during smooth scrolling.
+  // https://lodash.com/docs/4.17.10#throttle
+  // You could do like...
+  // window.addEventListener("scroll", () => {
+  //    _.throttle(doThatStuff, 100);
+  // });
+  // Only not doing it here to keep this Pen dependency-free.
+
+  window.addEventListener("scroll", event => {
+    let fromTop = window.scrollY;
+
+    mainNavLinks.forEach((link, index) => {
+      let section = document.getElementById(decodeURI(link.hash).substring(1));
+      let nextSection = null
+      if (mainNavLinks[index + 1]) {
+        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+      }
+      console.log('section.offsetHeight', section.offsetHeight);
+      if (section.offsetTop <= fromTop) {
+        if (nextSection) {
+          if (nextSection.offsetTop > fromTop) {
+            link.classList.add("current");
+          } else {
+            link.classList.remove("current");    
+          }
+        } else {
+          link.classList.add("current");
+        }
+      } else {
+        link.classList.remove("current");
+      }
+    });
+  });
+
+</script>
+
+      </div>
+    </div>
+  </body>
+</html>
