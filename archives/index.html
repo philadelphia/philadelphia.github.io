@@ -1,286 +1,293 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>philadelphia</title>
-<meta name="description" content="德不孤必有邻" />
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565967987402">
+    <meta charset="utf-8" >
+
+<title>文章归档 | philadelphia</title>
+<meta name="description" content="德不孤必有邻">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1565968073286">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
 
 
 
   </head>
   <body>
-    <div class="main">
-      <div class="main-content">
-        <div class="site-header">
-  <a href="https://philadelphia.github.io">
-  <img class="avatar" src="https://philadelphia.github.io/images/avatar.png?v=1565967987402" alt="">
-  </a>
-  <h1 class="site-title">
-    philadelphia
-  </h1>
-  <p class="site-description">
-    德不孤必有邻
-  </p>
-  <div class="menu-container">
-    
-      
-        <a href="/" class="menu">
-          首页
-        </a>
-      
-    
-      
-        <a href="/archives" class="menu">
-          归档
-        </a>
-      
-    
-      
-        <a href="/tags" class="menu">
-          标签
-        </a>
-      
-    
-      
-        <a href="/post/about" class="menu">
-          关于
-        </a>
-      
-    
-  </div>
-  <div class="social-container">
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-  </div>
-</div>
+    <div id="app" class="main">
 
-    
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://philadelphia.github.io">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1565968073286" class="site-logo">
+        <h1 class="site-title">philadelphia</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
         
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      德不孤必有邻
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
 
-<div class="archives-container">
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          
+
+          <h2 class="archives-title">文章归档</h2>
+          <div class="archives-container">
+            
+              <h2 class="year" data-aos="fade-in" data-aos-delay="500">2019</h2>
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/rxjava-10">
+                      <h2 class="post-title">
+                        RxJava 1.0
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/retrofit20-jian-jie">
+                      <h2 class="post-title">
+                        Retrofit2.0简介
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/retrofit-ji-chong-apiservice-jie-kou-ding-yi-de-qu-bie">
+                      <h2 class="post-title">
+                        Retrofit: 几种ApiService接口定义的区别
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/retrofit-yuan-ma-fen-xi">
+                      <h2 class="post-title">
+                        Retrofit 源码分析
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/okhttp-yuan-ma-fen-xi">
+                      <h2 class="post-title">
+                        OkHttp 源码分析
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/javadong-tai-bang-ding">
+                      <h2 class="post-title">
+                        Java:动态绑定
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/android-zhong-activity-shu-ju-de-bao-cun-he-hui-fu">
+                      <h2 class="post-title">
+                        Android中Activity数据的保存和恢复 
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi">
+                      <h2 class="post-title">
+                         Android 系统的事件分发机制分析 
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/android-zhong-nei-bu-cun-chu-he-wai-bu-cun-chu-fen-xi">
+                      <h2 class="post-title">
+                         Android 中内部存储和外部存储分析 
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/androidview-inflation-fen-xi">
+                      <h2 class="post-title">
+                        Android:View Inflation 分析
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/activity-configuration-changes">
+                      <h2 class="post-title">
+                        Activity: configuration changes
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/handler-yin-qi-de-nei-cun-xie-lu-fen-xi-yi-ji-jie-jue-fang-fa">
+                      <h2 class="post-title">
+                        Handler 引起的内存泄露分析以及解决方法
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+                
+              
+            
+              <h2 class="year" data-aos="fade-in" data-aos-delay="500">2018</h2>
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+              
+                
+                  <article class="post">
+                    <a href="https://philadelphia.github.io/post/hello-gridea">
+                      <h2 class="post-title">
+                        Hello Gridea
+                      </h2>
+                    </a>
+                  </article>
+                
+              
+            
+          </div>
+
+          <div class="pagination-container">
   
-    <h2 class="year">2019</h2>
-    
-      
-        <a href="https://philadelphia.github.io/post/rxjava-10" class="post">
-          <h2 class="post-title">
-            RxJava 1.0
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/retrofit20-jian-jie" class="post">
-          <h2 class="post-title">
-            Retrofit2.0简介
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/retrofit-ji-chong-apiservice-jie-kou-ding-yi-de-qu-bie" class="post">
-          <h2 class="post-title">
-            Retrofit: 几种ApiService接口定义的区别
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/retrofit-yuan-ma-fen-xi" class="post">
-          <h2 class="post-title">
-            Retrofit 源码分析
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/okhttp-yuan-ma-fen-xi" class="post">
-          <h2 class="post-title">
-            OkHttp 源码分析
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/javadong-tai-bang-ding" class="post">
-          <h2 class="post-title">
-            Java:动态绑定
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/android-zhong-activity-shu-ju-de-bao-cun-he-hui-fu" class="post">
-          <h2 class="post-title">
-            Android中Activity数据的保存和恢复 
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi" class="post">
-          <h2 class="post-title">
-             Android 系统的事件分发机制分析 
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/android-zhong-nei-bu-cun-chu-he-wai-bu-cun-chu-fen-xi" class="post">
-          <h2 class="post-title">
-             Android 中内部存储和外部存储分析 
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/androidview-inflation-fen-xi" class="post">
-          <h2 class="post-title">
-            Android:View Inflation 分析
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/activity-configuration-changes" class="post">
-          <h2 class="post-title">
-            Activity: configuration changes
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/handler-yin-qi-de-nei-cun-xie-lu-fen-xi-yi-ji-jie-jue-fang-fa" class="post">
-          <h2 class="post-title">
-            Handler 引起的内存泄露分析以及解决方法
-          </h2>
-          <div class="time">2019-08-16</div>
-        </a>
-      
-    
-      
-    
-  
-    <h2 class="year">2018</h2>
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-    
-      
-        <a href="https://philadelphia.github.io/post/hello-gridea" class="post">
-          <h2 class="post-title">
-            Hello Gridea
-          </h2>
-          <div class="time">2018-12-12</div>
-        </a>
-      
-    
   
 </div>
 
-    
-        <div class="pagination-container">
-  
-  
-</div>
+        </div>
+      </div>
+    </div>
 
-    
-        <div class="site-footer">
-  Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | 
-  <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
-</div>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
 
-<script>
-  hljs.initHighlightingOnLoad()
+<script type="application/javascript">
 
-  let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+AOS.init();
 
-  // This should probably be throttled.
-  // Especially because it triggers during smooth scrolling.
-  // https://lodash.com/docs/4.17.10#throttle
-  // You could do like...
-  // window.addEventListener("scroll", () => {
-  //    _.throttle(doThatStuff, 100);
-  // });
-  // Only not doing it here to keep this Pen dependency-free.
+hljs.initHighlightingOnLoad()
 
-  window.addEventListener("scroll", event => {
-    let fromTop = window.scrollY;
-
-    mainNavLinks.forEach((link, index) => {
-      let section = document.getElementById(decodeURI(link.hash).substring(1));
-      let nextSection = null
-      if (mainNavLinks[index + 1]) {
-        nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
-      }
-      console.log('section.offsetHeight', section.offsetHeight);
-      if (section.offsetTop <= fromTop) {
-        if (nextSection) {
-          if (nextSection.offsetTop > fromTop) {
-            link.classList.add("current");
-          } else {
-            link.classList.remove("current");    
-          }
-        } else {
-          link.classList.add("current");
-        }
-      } else {
-        link.classList.remove("current");
-      }
-    });
-  });
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
 
 </script>
 
-      </div>
-    </div>
+
+
+
   </body>
 </html>
