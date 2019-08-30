@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1567149455733">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1567149513434">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
@@ -36,7 +36,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://philadelphia.github.io">
-        <img src="https://philadelphia.github.io/images/avatar.png?v=1567149455733" class="site-logo">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1567149513434" class="site-logo">
         <h1 class="site-title">philadelphia</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -109,8 +109,10 @@
 <li>SMS服务，当服务端有推送的需求时，会向所有的客户端发送短信，缺点是  贵，小公司玩不起</li>
 <li>长连接，就是连接接后，通信结束后，不断来连接，后续的通信依旧使用该连接，<br>
 短连接和长连接的区别见下图：<br>
-<img src="https://philadelphia.github.io/post-images/1567148424079.png" alt=""><br>
-但是长连接也有断开的可能,三种原因会导致长连接的断开</li>
+<img src="https://philadelphia.github.io/post-images/1567148424079.png" alt=""></li>
+</ol>
+<p>但是长连接也有断开的可能,三种原因会导致长连接的断开</p>
+<ol>
 <li>NAT超时：因为IP地址的数量有限，很多时候的我们的通信都是使用NAT来完成，但是NAT会定期刷新NAT映射表，会将没有数据通信的连接断开。</li>
 <li>DHCP租约过期：一般而言，PC端或手机终端获取IP地址的方式大多是动态获取，即通过DHCP协议从DHCP服务器(一般由路由器同时兼任)获取。目前测试发现安卓系统对DHCP的处理有Bug， DHCP租期到了不会主动续约并且会继续使用过期IP，这个问题会造成TCP长连接偶然的断连。</li>
 <li>网络状态改变：手机网络和WIFI网络切换， 网络断开和连上等情况， 也会使长连接断开。 这里原因可能比较多， 但结果无非就是IP变了， 或者被系统通知连接断了。</li>
