@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-08-30T07:16:33.186Z</updated>
+    <updated>2019-08-30T07:17:38.523Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -50,7 +50,7 @@
 <p>在设备休眠的时候是依然可以接受到推送的。如果服务器想客户端推送了信息，那么休眠状态下的设备是如何响应的呢，设备已经休眠了啊，要回答这个问题就需要对手机的硬件架构有一定的了解了。<br>
 现在的移动设备的处理器一般包括两部分，一部分是AP(Application Processor)<br>
 一部分是BP(BaseBand Processor)<br>
-AP是用来运行系统和应用的<br>
+AP是用来运行操作系统和应用程序的<br>
 BP是用来运行实时操作系统(RTOS)，通讯协议栈运行于BP的RTOS之上<br>
 非通话时间，BP的能耗基本上在5mA左右，而AP只要处于非休眠状态，能耗至少在50mA以上，执行图形运算时会更高。另外LCD工作时功耗在100mA左右，WIFI也在100mA左右。一般手机待机时，AP，LCD，WIFI均进入休眠状态，这时Android中应用程序的代码也会停止执行。</p>
 <p>当设备收到数据包时，BP会唤醒AP，这样CPU接下来就会收到服务器发来的推送，然后就可以进行处理了。<br>
