@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-08-30T07:15:24.617Z</updated>
+    <updated>2019-08-30T07:16:13.146Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -33,9 +33,9 @@
 针对NAT照成的长连接断开，我们需要定期的发送心跳包来避免NAT失效。</p>
 <p>心跳包不是长连接所必需的的，因为TCP连接默认就是长连接的。<br>
 在长连接里使用心跳包有两个作用：1：避免NAT失效；2：检测长连接是否有效<br>
-因为2，3造成的连接断开是不会通知客户端的，客户端只有发起连接，遇到写超时时才知道连接断开了。<br>
-心跳包的发送频率问题：<br>
-心跳包一定要小于NAT的刷新频率，这样才能避免连接被当做失效连接而关闭<br>
+因为2，3造成的连接断开是不会通知客户端的，客户端只有发起连接，遇到写超时时才知道连接断开了。</p>
+<h1 id="心跳包的发送频率问题">心跳包的发送频率问题：</h1>
+<p>心跳包一定要小于NAT的刷新频率，这样才能避免连接被当做失效连接而关闭<br>
 如果心跳包发送太频繁，除了浪费流量和电量之外，没有其他意义<br>
 如果频率太慢了，可能导致NAT失效<br>
 为了维持长连接，需要CPU定时发送心跳包。<br>

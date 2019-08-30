@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1567149308951">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1567149370731">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
@@ -36,7 +36,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://philadelphia.github.io">
-        <img src="https://philadelphia.github.io/images/avatar.png?v=1567149308951" class="site-logo">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1567149370731" class="site-logo">
         <h1 class="site-title">philadelphia</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -119,9 +119,9 @@
 针对NAT照成的长连接断开，我们需要定期的发送心跳包来避免NAT失效。</p>
 <p>心跳包不是长连接所必需的的，因为TCP连接默认就是长连接的。<br>
 在长连接里使用心跳包有两个作用：1：避免NAT失效；2：检测长连接是否有效<br>
-因为2，3造成的连接断开是不会通知客户端的，客户端只有发起连接，遇到写超时时才知道连接断开了。<br>
-心跳包的发送频率问题：<br>
-心跳包一定要小于NAT的刷新频率，这样才能避免连接被当做失效连接而关闭<br>
+因为2，3造成的连接断开是不会通知客户端的，客户端只有发起连接，遇到写超时时才知道连接断开了。</p>
+<h1 id="心跳包的发送频率问题">心跳包的发送频率问题：</h1>
+<p>心跳包一定要小于NAT的刷新频率，这样才能避免连接被当做失效连接而关闭<br>
 如果心跳包发送太频繁，除了浪费流量和电量之外，没有其他意义<br>
 如果频率太慢了，可能导致NAT失效<br>
 为了维持长连接，需要CPU定时发送心跳包。<br>
