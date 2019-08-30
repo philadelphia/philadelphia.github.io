@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>推送 | philadelphia</title>
+<meta name="description" content="德不孤，必有邻">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1567148903205">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+
+  
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css" />
+  
+
+  
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://philadelphia.github.io">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1567148903205" class="site-logo">
+        <h1 class="site-title">philadelphia</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      德不孤，必有邻
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">推送</h2>
+            <div class="post-date">2019-08-30</div>
+            
+            <div class="post-content">
+              <p>随着移动互联网和移动操作系统的发展，移动设备的功能也越来越丰富，客户端和服务端的交互越来越方便。我们可以及时收到服务的发送的信息，及时作出回应，这背后就设计到推送技术。</p>
+<h1 id="传统的推送方案">传统的推送方案：</h1>
+<ol>
+<li>轮询：客户端定期发送Http请求（短连接）。优点：获取更新及时，缺点是浪费带宽，设备电量。(因为HTTP1.0是短连接类型，每次通话结束后就断开连接)</li>
+<li>SMS服务，当服务端有推送的需求时，会向所有的客户端发送短信，缺点是  贵，小公司玩不起</li>
+<li>长连接，就是连接接后，通信结束后，不断来连接，后续的通信依旧使用该连接，<br>
+短连接和长连接的区别见下图：<br>
+<img src="https://philadelphia.github.io/post-images/1567148424079.png" alt=""><br>
+但是长连接也有断开的可能,三种原因会导致长连接的断开</li>
+<li>NAT超时：因为IP地址的数量有限，很多时候的我们的通信都是使用NAT来完成，但是NAT会定期刷新NAT映射表，会将没有数据通信的连接断开。</li>
+<li>DHCP租约过期：一般而言，PC端或手机终端获取IP地址的方式大多是动态获取，即通过DHCP协议从DHCP服务器(一般由路由器同时兼任)获取。目前测试发现安卓系统对DHCP的处理有Bug， DHCP租期到了不会主动续约并且会继续使用过期IP，这个问题会造成TCP长连接偶然的断连。</li>
+<li>网络状态改变：手机网络和WIFI网络切换， 网络断开和连上等情况， 也会使长连接断开。 这里原因可能比较多， 但结果无非就是IP变了， 或者被系统通知连接断了。</li>
+</ol>
+<p>针对2，3照成的长连接断开，我们在连接断开后重新发起连接来解决。<br>
+针对NAT照成的长连接断开，我们需要定期的发送心跳包来避免NAT失效。</p>
+<p>心跳包不是长连接所必需的的，因为TCP连接默认就是长连接的。<br>
+在长连接里使用心跳包有两个作用：1：避免NAT失效；2：检测长连接是否有效<br>
+因为2，3造成的连接断开是不会通知客户端的，客户端只有发起连接，遇到写超时时才知道连接断开了。<br>
+心跳包的发送频率问题：<br>
+心跳包一定要小于NAT的刷新频率，这样才能避免连接被当做失效连接而关闭<br>
+如果心跳包发送太频繁，除了浪费流量和电量之外，没有其他意义<br>
+如果频率太慢了，可能导致NAT失效<br>
+为了维持长连接，需要CPU定时发送心跳包。<br>
+如果使用Timer定时器就会导致阻碍CPU进入休眠状态，很宽就会耗尽设备的电量<br>
+在Android系统上推荐使用AlarmManager，AlarmManager 是系统封装的一个RTC的管理工具，RTC(Real Time Clock)是一个独立的硬件时钟，可以在CPU休眠时正常运行，在预设的时间到达时，通过中断唤醒 CPU。</p>
+<h1 id="心跳包和轮询的区别">心跳包和轮询的区别</h1>
+<p>心跳包和轮询看起来类似， 都是客户端主动联系服务器， 但是区别很大。</p>
+<p>轮询是为了获取数据， 而心跳是为了保活TCP连接；<br>
+轮询得越频繁， 获取数据就越及时，心跳的频繁与否和数据是否及时没有直接关系；<br>
+轮询比心跳能耗更高， 因为一次轮询需要经过TCP三次握手， 四次挥手， 单次心跳不需要建立和拆除TCP连接。</p>
+<h1 id="长连接是如何唤醒设备的">长连接是如何唤醒设备的：</h1>
+<p>在设备休眠的时候是依然可以接受到推送的。如果服务器想客户端推送了信息，那么休眠状态下的设备是如何响应的呢，设备已经休眠了啊，要回答这个问题就需要对手机的硬件架构有一定的了解了。<br>
+现在的移动设备的处理器一般包括两部分，一部分是AP(Application Processor)<br>
+一部分是BP(BaseBand Processor)<br>
+AP是用来运行系统和应用的<br>
+BP是用来运行实时操作系统(RTOS)，通讯协议栈运行于BP的RTOS之上<br>
+非通话时间，BP的能耗基本上在5mA左右，而AP只要处于非休眠状态，能耗至少在50mA以上，执行图形运算时会更高。另外LCD工作时功耗在100mA左右，WIFI也在100mA左右。一般手机待机时，AP，LCD，WIFI均进入休眠状态，这时Android中应用程序的代码也会停止执行。</p>
+<p>当设备收到数据包时，BP会唤醒AP，这样CPU接下来就会收到服务器发来的推送，然后就可以进行处理了。<br>
+1:https://cstsinghua.github.io/2016/06/08/%E6%8E%A8%E9%80%81%E6%96%B9%E6%A1%88/<br>
+<a href=""></a>2：http://www.52im.net/thread-341-1-1.html</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://philadelphia.github.io/post/rxjava-10">
+                  <h3 class="post-title">
+                    RxJava 1.0
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+              
+                <div id="gitalk-container" data-aos="fade-in"></div>
+              
+
+              
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+  
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+
+      var gitalk = new Gitalk({
+        clientID: '',
+        clientSecret: '',
+        repo: '',
+        owner: '',
+        admin: [''],
+        id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+        distractionFreeMode: false  // Facebook-like distraction free mode
+      })
+
+      gitalk.render('gitalk-container')
+
+    </script>
+  
+
+  
+
+
+
+
+  </body>
+</html>

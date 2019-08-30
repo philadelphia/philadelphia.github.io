@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-08-16T15:44:14.230Z</updated>
+    <updated>2019-08-30T07:08:49.455Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -10,6 +10,54 @@
     <logo>https://philadelphia.github.io/images/avatar.png</logo>
     <icon>https://philadelphia.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, philadelphia</rights>
+    <entry>
+        <title type="html"><![CDATA[推送]]></title>
+        <id>https://philadelphia.github.io/post/tui-song</id>
+        <link href="https://philadelphia.github.io/post/tui-song">
+        </link>
+        <updated>2019-08-30T06:26:20.000Z</updated>
+        <content type="html"><![CDATA[<p>随着移动互联网和移动操作系统的发展，移动设备的功能也越来越丰富，客户端和服务端的交互越来越方便。我们可以及时收到服务的发送的信息，及时作出回应，这背后就设计到推送技术。</p>
+<h1 id="传统的推送方案">传统的推送方案：</h1>
+<ol>
+<li>轮询：客户端定期发送Http请求（短连接）。优点：获取更新及时，缺点是浪费带宽，设备电量。(因为HTTP1.0是短连接类型，每次通话结束后就断开连接)</li>
+<li>SMS服务，当服务端有推送的需求时，会向所有的客户端发送短信，缺点是  贵，小公司玩不起</li>
+<li>长连接，就是连接接后，通信结束后，不断来连接，后续的通信依旧使用该连接，<br>
+短连接和长连接的区别见下图：<br>
+<img src="https://philadelphia.github.io/post-images/1567148424079.png" alt=""><br>
+但是长连接也有断开的可能,三种原因会导致长连接的断开</li>
+<li>NAT超时：因为IP地址的数量有限，很多时候的我们的通信都是使用NAT来完成，但是NAT会定期刷新NAT映射表，会将没有数据通信的连接断开。</li>
+<li>DHCP租约过期：一般而言，PC端或手机终端获取IP地址的方式大多是动态获取，即通过DHCP协议从DHCP服务器(一般由路由器同时兼任)获取。目前测试发现安卓系统对DHCP的处理有Bug， DHCP租期到了不会主动续约并且会继续使用过期IP，这个问题会造成TCP长连接偶然的断连。</li>
+<li>网络状态改变：手机网络和WIFI网络切换， 网络断开和连上等情况， 也会使长连接断开。 这里原因可能比较多， 但结果无非就是IP变了， 或者被系统通知连接断了。</li>
+</ol>
+<p>针对2，3照成的长连接断开，我们在连接断开后重新发起连接来解决。<br>
+针对NAT照成的长连接断开，我们需要定期的发送心跳包来避免NAT失效。</p>
+<p>心跳包不是长连接所必需的的，因为TCP连接默认就是长连接的。<br>
+在长连接里使用心跳包有两个作用：1：避免NAT失效；2：检测长连接是否有效<br>
+因为2，3造成的连接断开是不会通知客户端的，客户端只有发起连接，遇到写超时时才知道连接断开了。<br>
+心跳包的发送频率问题：<br>
+心跳包一定要小于NAT的刷新频率，这样才能避免连接被当做失效连接而关闭<br>
+如果心跳包发送太频繁，除了浪费流量和电量之外，没有其他意义<br>
+如果频率太慢了，可能导致NAT失效<br>
+为了维持长连接，需要CPU定时发送心跳包。<br>
+如果使用Timer定时器就会导致阻碍CPU进入休眠状态，很宽就会耗尽设备的电量<br>
+在Android系统上推荐使用AlarmManager，AlarmManager 是系统封装的一个RTC的管理工具，RTC(Real Time Clock)是一个独立的硬件时钟，可以在CPU休眠时正常运行，在预设的时间到达时，通过中断唤醒 CPU。</p>
+<h1 id="心跳包和轮询的区别">心跳包和轮询的区别</h1>
+<p>心跳包和轮询看起来类似， 都是客户端主动联系服务器， 但是区别很大。</p>
+<p>轮询是为了获取数据， 而心跳是为了保活TCP连接；<br>
+轮询得越频繁， 获取数据就越及时，心跳的频繁与否和数据是否及时没有直接关系；<br>
+轮询比心跳能耗更高， 因为一次轮询需要经过TCP三次握手， 四次挥手， 单次心跳不需要建立和拆除TCP连接。</p>
+<h1 id="长连接是如何唤醒设备的">长连接是如何唤醒设备的：</h1>
+<p>在设备休眠的时候是依然可以接受到推送的。如果服务器想客户端推送了信息，那么休眠状态下的设备是如何响应的呢，设备已经休眠了啊，要回答这个问题就需要对手机的硬件架构有一定的了解了。<br>
+现在的移动设备的处理器一般包括两部分，一部分是AP(Application Processor)<br>
+一部分是BP(BaseBand Processor)<br>
+AP是用来运行系统和应用的<br>
+BP是用来运行实时操作系统(RTOS)，通讯协议栈运行于BP的RTOS之上<br>
+非通话时间，BP的能耗基本上在5mA左右，而AP只要处于非休眠状态，能耗至少在50mA以上，执行图形运算时会更高。另外LCD工作时功耗在100mA左右，WIFI也在100mA左右。一般手机待机时，AP，LCD，WIFI均进入休眠状态，这时Android中应用程序的代码也会停止执行。</p>
+<p>当设备收到数据包时，BP会唤醒AP，这样CPU接下来就会收到服务器发来的推送，然后就可以进行处理了。<br>
+1:https://cstsinghua.github.io/2016/06/08/%E6%8E%A8%E9%80%81%E6%96%B9%E6%A1%88/<br>
+<a href=""></a>2：http://www.52im.net/thread-341-1-1.html</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[RxJava 1.0]]></title>
         <id>https://philadelphia.github.io/post/rxjava-10</id>
@@ -3568,178 +3616,6 @@ public abstract File getExternalFilesDir(@Nullable String type);
 <p><a href="http://blog.csdn.net/u012702547/article/details/50269639">http://blog.csdn.net/u012702547/article/details/50269639</a></p>
 <p><a href="https://www.liaohuqiu.net/cn/posts/storage-in-android/">https://www.liaohuqiu.net/cn/posts/storage-in-android/</a></p>
 <p>Ths</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Android:View Inflation 分析]]></title>
-        <id>https://philadelphia.github.io/post/androidview-inflation-fen-xi</id>
-        <link href="https://philadelphia.github.io/post/androidview-inflation-fen-xi">
-        </link>
-        <updated>2019-08-16T09:41:45.000Z</updated>
-        <content type="html"><![CDATA[<p>LayoutInflater 使用说明</p>
-<p>LayoutInflater主要是用于加载布局。<br>
-加载布局的任务通常都是在Activity中调用setContentView()方法来完成的。其实setContentView()方法的内部也是使用LayoutInflater来加载布局的，只不过这部分源码是internal的，不太容易查看到。</p>
-<p>先来看一下LayoutInflater的基本用法吧，它的用法非常简单，首先需要获取到LayoutInflater的实例，有两种方法可以获取到，第一种写法如下：</p>
-<pre><code>LayoutInflater layoutInflater = LayoutInflater.from(context);  
-</code></pre>
-<p>当然，还有另外一种写法也可以完成同样的效果：</p>
-<pre><code>LayoutInflater layoutInflater = (LayoutInflater) context  
-    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);  
-</code></pre>
-<p>其实第一种就是第二种的简单写法，只是Android给我们做了一下封装而已。代码如下：</p>
-<pre><code> public static LayoutInflater from(Context context) {
-    LayoutInflater LayoutInflater =
-            (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-    if (LayoutInflater == null) {
-        throw new AssertionError(&quot;LayoutInflater not found.&quot;);
-    }
-    return LayoutInflater;
-}
-</code></pre>
-<p>得到了LayoutInflater的实例之后就可以调用它的inflate()方法来加载布局了，如下所示：</p>
-<pre><code>layoutInflater.inflate(resourceId, root);  
-</code></pre>
-<p>inflate()方法一般接收两个参数，第一个参数就是要加载的布局资源文件id，第二个参数是指给该布局的外部再嵌套一层父布局，如果不需要就直接传null。这样就成功成功创建了一个布局的实例，之后再将它添加到指定的位置就可以显示出来了。</p>
-<p>其实它是调用一个三个参数的重载方法来实现的。<br>
-代码实现：</p>
-<pre><code>public View inflate(@LayoutRes int resource, @Nullable ViewGroup root) {
-    return inflate(resource, root, root != null);
-}
-</code></pre>
-<p>该三个参数的方法的实现为：</p>
-<p>public View inflate(@LayoutRes int resource, @Nullable ViewGroup root) {<br>
-return inflate(resource, root, root != null);<br>
-}</p>
-<p>也就是说不管你是使用的哪个inflate()方法的重载，最终都会辗转调用到LayoutInflater的如下代码中</p>
-<p>三个参数的方法的实现为：</p>
-<pre><code>public View inflate(XmlPullParser parser, @Nullable ViewGroup root, boolean attachToRoot) {
-    synchronized (mConstructorArgs) {
-        Trace.traceBegin(Trace.TRACE_TAG_VIEW, &quot;inflate&quot;);
-
-        final Context inflaterContext = mContext;
-        final AttributeSet attrs = Xml.asAttributeSet(parser);
-        Context lastContext = (Context) mConstructorArgs[0];
-        mConstructorArgs[0] = inflaterContext;
-        View result = root;
-
-        try {
-            // Look for the root node.
-            int type;
-            while ((type = parser.next()) != XmlPullParser.START_TAG &amp;&amp;
-                    type != XmlPullParser.END_DOCUMENT) {
-                // Empty
-            }
-
-            if (type != XmlPullParser.START_TAG) {
-                throw new InflateException(parser.getPositionDescription()
-                        + &quot;: No start tag found!&quot;);
-            }
-
-            final String name = parser.getName();
-
-            if (DEBUG) {
-                System.out.println(&quot;**************************&quot;);
-                System.out.println(&quot;Creating root view: &quot;
-                        + name);
-                System.out.println(&quot;**************************&quot;);
-            }
-
-		//如果开始IDE标签名是Merge，则会将布局文件中的view依次加入到root视图中。
-            if (TAG_MERGE.equals(name)) {
-				//如果开始IDE标签名是Merge,如果attachToRoot 为false，会报错
-                if (root == null || !attachToRoot) {
-                    throw new InflateException(&quot;&lt;merge /&gt; can be used only with a valid &quot;
-                            + &quot;ViewGroup root and attachToRoot=true&quot;);
-                }
-
-			//遍历parser。将view依次加入到root中、
-                rInflate(parser, root, inflaterContext, attrs, false);
-            } else {
-				//如果开始标签不是merge。则temp就是该布局的根视图。
-                // Temp is the root view that was found in the xml
-                final View temp = createViewFromTag(root, name, inflaterContext, attrs);
-
-                ViewGroup.LayoutParams params = null;
-
-                if (root != null) {
-                    if (DEBUG) {
-                        System.out.println(&quot;Creating params from root: &quot; +
-                                root);
-                    }
-                    // Create layout params that match root, if supplied
-                    params = root.generateLayoutParams(attrs);
-                    if (!attachToRoot) {
-                        // Set the layout params for temp if we are not
-                        // attaching. (If we are, we use addView, below)
-                        temp.setLayoutParams(params);
-                    }
-                }
-
-                if (DEBUG) {
-                    System.out.println(&quot;-----&gt; start inflating children&quot;);
-                }
-
-                // Inflate all children under temp against its context.
-                rInflateChildren(parser, temp, attrs, true);
-
-                if (DEBUG) {
-                    System.out.println(&quot;-----&gt; done inflating children&quot;);
-                }
-
-                // We are supposed to attach all the views we found (int temp)
-                // to root. Do that now.
-                if (root != null &amp;&amp; attachToRoot) {
-                    root.addView(temp, params);
-                }
-
-                // Decide whether to return the root that was passed in or the
-                // top view found in xml.
-                if (root == null || !attachToRoot) {
-                    result = temp;
-                }
-            }
-
-        } catch (XmlPullParserException e) {
-            final InflateException ie = new InflateException(e.getMessage(), e);
-            ie.setStackTrace(EMPTY_STACK_TRACE);
-            throw ie;
-        } catch (Exception e) {
-            final InflateException ie = new InflateException(parser.getPositionDescription()
-                    + &quot;: &quot; + e.getMessage(), e);
-            ie.setStackTrace(EMPTY_STACK_TRACE);
-            throw ie;
-        } finally {
-            // Don't retain static reference on context.
-            mConstructorArgs[0] = lastContext;
-            mConstructorArgs[1] = null;
-
-            Trace.traceEnd(Trace.TRACE_TAG_VIEW);
-        }
-
-        return result;
-    }
-}
-</code></pre>
-<pre><code>
-	 第二个参数和第三个参数有四种组合情况
-        if(root == null &amp;&amp; ！attachToRoot){
-            返回id里的view本身
-        }
-
-        if(root != null &amp;&amp; attachToRoot){
-            返回root本身，此时root已经将id里的控件添加了。
-        此时如果在使用root.addview(view) 就会报错。view此时已经有parent、因为view本身就是root自己。root自己addview自身会报错
-        }else if (root != null &amp;&amp; !attachToRoot){
-            返回返回id里的view本身，此时id里的控件已经设置了布局参数
-        }
-
-	1. 如果root为null，attachToRoot将失去作用，设置任何值都没有意义。
-	2. 如果root不为null，attachToRoot设为true，则会给加载的布局文件的指定一个父布局，即root。
-	3. 如果root不为null，attachToRoot设为false，则会将布局文件最外层的所有layout属性进行设置，当该view被添加到父view当中时，这些layout属性会自动生效。
-	4. 在不设置attachToRoot参数的情况下，如果root不为null，attachToRoot参数默认为true。
-
-</code></pre>
-<p>Reference:	<a href="http://blog.csdn.net/guolin_blog/article/details/12921889">http://blog.csdn.net/guolin_blog/article/details/12921889</a></p>
 ]]></content>
     </entry>
 </feed>
