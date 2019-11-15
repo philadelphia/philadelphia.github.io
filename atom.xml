@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-11-15T14:14:27.272Z</updated>
+    <updated>2019-11-15T16:55:01.153Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -931,8 +931,8 @@ client.setCache(new Cache(httpCacheDirectory,10 * 1024 * 1024));
         </link>
         <updated>2019-08-16T10:06:42.000Z</updated>
         <content type="html"><![CDATA[<h1 id="retrofit声明-apiservice接口">Retrofit:声明 ApiService接口</h1>
-<p>我们在使用Retrofit的时候只需要把URL通过注解的形式写到APIService文件中就行了。</p>
-<p>比如登录功能：</p>
+<p>我们在使用Retrofit的时候只需要把URL通过注解的形式写到APIService文件中就行了。<br>
+比如登录功能：</p>
 <p>如果后台的成功返回格式为</p>
 <pre><code>{	
 	code:0;
@@ -1024,11 +1024,8 @@ observable.subscribe(new Action1&lt;Response&lt;LoginResult&gt;&gt;() {
 <p>这样就能拿到Response信息了，然后根据Response code判断是否登录成功了。</p>
 <p>但是这样有个问题是我们写接口会特备繁琐，每次都得使用Response&lt;&gt;泛型。一般我们都写作Observable<LoginResult> login();</p>
 <p>其实我们一般情况下也不关注Response信息的。但是不排除特殊情况</p>
-<p>比如这种情况</p>
-<pre><code>[]()
-[]()[]()[]()
-</code></pre>
-<p>https://academy.realm.io/cn/posts/droidcon-jake-wharton-simple-http-retrofit-2/</p>
+<p>比如这种情况<br>
+https://academy.realm.io/cn/posts/droidcon-jake-wharton-simple-http-retrofit-2/</p>
 <p>这篇文章提到的分页加载的情况，其实这种情况也可以将下一个页面的URL放到Response body里返回。</p>
 <p>这里只是给出了一种情景。</p>
 <p>现实中解决方案很多种，只能折中了，其实我们没必要使用Response的Response code 来判断接口是否调用成功了。因为Retrofit都帮我们做过了。所以我们定义接口的时候只要使用Observable<Response>就好了。</p>
@@ -1042,7 +1039,7 @@ observable.subscribe(new Action1&lt;Response&lt;LoginResult&gt;&gt;() {
 </code></pre>
 <p>这里RxJavaCallAdapterFactory生成的CallAdapter对象就帮我们做好了结果的转换</p>
 <p>我们看一下RxJavaCallAdapterFactory的声明。</p>
-<pre><code>/**
+<pre><code>	/**
  * A {@linkplain CallAdapter.Factory call adapter} which uses RxJava for creating observables.
  * &lt;p&gt;
  * Adding this class to {@link Retrofit} allows you to return {@link Observable} from service
@@ -1075,6 +1072,19 @@ observable.subscribe(new Action1&lt;Response&lt;LoginResult&gt;&gt;() {
 </code></pre>
 <h2 id="结论">结论</h2>
 <p>结论就是，如果我们没有对Response有特殊的需求的话，直接在接口声明处直接声明成Observable<T>是最方便最直观的。</p>
+<h2 id="另外">另外</h2>
+<p>如果已经存在这样的接口定义了，在没有API可用的情况下，我们需要在mock数据的时候，比如我们需要Observer<LoginResult> 的observable。<br>
+我们可以这样mock数据</p>
+<pre><code>LoginResult loginResult = new LoginResult();
+loginResult.setCode(0);
+loginResult.setMessage(&quot;登录成功&quot;);
+Observable&lt;LoginResult&gt; just1 = Observable.just(loginResult);
+</code></pre>
+<p>而如果我们定义的是Observable&lt;Response<LoginResult>&gt; login()时我们需要返回这样的Observable</p>
+<pre><code>Response&lt;LoginResponse&gt; loginResponseResponse = Response.success(loginResult);
+Observable&lt;Response&lt;LoginResponse&gt;&gt; just2 = Observable.just(loginResponseResponse);	
+</code></pre>
+<p>这样就可以mock对应的数据了</p>
 <p>这篇文章本应该和Retofit源码分析一起写的，奈何Retrofit的源码实在是太晦涩难懂了</p>
 ]]></content>
     </entry>
