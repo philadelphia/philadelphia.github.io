@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" >
 
-<title>关于 | philadelphia</title>
+<title>Activity launchMode在开发中的一些使用 | philadelphia</title>
 <meta name="description" content="德不孤，必有邻">
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -98,14 +98,55 @@
       <div class="main-container">
         <div class="content-container" data-aos="fade-up">
           <div class="post-detail">
-            <h2 class="post-title">关于</h2>
-            <div class="post-date">2019-01-25</div>
+            <h2 class="post-title">Activity launchMode在开发中的一些使用</h2>
+            <div class="post-date">2019-11-19</div>
             
             <div class="post-content">
-              <p>这是关于的页面，可以在这里向世界介绍你！</p>
+              <p>最近在做APP的通知模块时，产品要求点击通知后</p>
+<ol>
+<li>在用户登录的情况下直接进入到通知消息的详情页，</li>
+<li>没有登录的情况下先进行登录，然后在跳转到消息的详情页</li>
+</ol>
+<p>但是登录页面可能包含了N多个步骤，所以最好的方式是当用户没有登录的情况下使用startActivityForResult进行登录请求，把登录功能当做一个模块，<br>
+因为登录支持很多方式登录，用户在登录页面可能使用账密登录或者点击其他登录选项使用其他方式登录，<br>
+我们只需要关注LogInActivity就行了，<br>
+如果使用其他登录方式进行登录，当登录成功后跳转到LogInActivity<br>
+我们可以给跳转intent设置flag<br>
+intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);</p>
+<p>只有这两种启动标志组合使用，才会调用LogInActivity的onNewIntent方法。<br>
+而如果单独使用<br>
+intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);<br>
+的话，会将LoginActivity提到栈顶并销毁其他Activity，但是并不会回调onNewIntent方法。</p>
+<p>这样的话我们就相当于使用singleTask的方式启动了LogInActivity<br>
+这样中间登录步骤的页面就可以全部销毁了。<br>
+然后在LogInActivity的onNewIntent()方法中setResult(Activity.Result_OK）来告诉强求页登录成功了，</p>
+<pre><code>@Override
+protected void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+      setResult(RESULT_OK);
+      finish();   
+}
+</code></pre>
+<p>没有登录的情况下复写onBackPressed()方法就行了，因为不论使用何种登录方式，只要进行到一半返回，最终没有完成登录返回的话一定会调用onBackPressed方法。因为只用成功才会自动finish LoginActivity</p>
+<pre><code>@Override
+public void onBackPressed() {
+    super.onBackPressed();
+    setResult(RESULT_CANCELED);
+}
+</code></pre>
+<p>其他功能也类似，比如认证相关的功能。</p>
 
             </div>
             
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://philadelphia.github.io/post/leetcode-zhi-wei-yun-suan">
+                  <h3 class="post-title">
+                    LeetCode之位运算
+                  </h3>
+                </a>
+              </div>
             
 
             

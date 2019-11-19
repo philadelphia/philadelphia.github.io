@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-11-16T04:08:55.316Z</updated>
+    <updated>2019-11-19T10:55:27.114Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -10,6 +10,47 @@
     <logo>https://philadelphia.github.io/images/avatar.png</logo>
     <icon>https://philadelphia.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, philadelphia</rights>
+    <entry>
+        <title type="html"><![CDATA[Activity launchMode在开发中的一些使用]]></title>
+        <id>https://philadelphia.github.io/post/activity-launchmode-zai-kai-fa-zhong-de-yi-xie-shi-yong</id>
+        <link href="https://philadelphia.github.io/post/activity-launchmode-zai-kai-fa-zhong-de-yi-xie-shi-yong">
+        </link>
+        <updated>2019-11-19T10:54:50.000Z</updated>
+        <content type="html"><![CDATA[<p>最近在做APP的通知模块时，产品要求点击通知后</p>
+<ol>
+<li>在用户登录的情况下直接进入到通知消息的详情页，</li>
+<li>没有登录的情况下先进行登录，然后在跳转到消息的详情页</li>
+</ol>
+<p>但是登录页面可能包含了N多个步骤，所以最好的方式是当用户没有登录的情况下使用startActivityForResult进行登录请求，把登录功能当做一个模块，<br>
+因为登录支持很多方式登录，用户在登录页面可能使用账密登录或者点击其他登录选项使用其他方式登录，<br>
+我们只需要关注LogInActivity就行了，<br>
+如果使用其他登录方式进行登录，当登录成功后跳转到LogInActivity<br>
+我们可以给跳转intent设置flag<br>
+intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);</p>
+<p>只有这两种启动标志组合使用，才会调用LogInActivity的onNewIntent方法。<br>
+而如果单独使用<br>
+intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);<br>
+的话，会将LoginActivity提到栈顶并销毁其他Activity，但是并不会回调onNewIntent方法。</p>
+<p>这样的话我们就相当于使用singleTask的方式启动了LogInActivity<br>
+这样中间登录步骤的页面就可以全部销毁了。<br>
+然后在LogInActivity的onNewIntent()方法中setResult(Activity.Result_OK）来告诉强求页登录成功了，</p>
+<pre><code>@Override
+protected void onNewIntent(Intent intent) {
+    super.onNewIntent(intent);
+      setResult(RESULT_OK);
+      finish();   
+}
+</code></pre>
+<p>没有登录的情况下复写onBackPressed()方法就行了，因为不论使用何种登录方式，只要进行到一半返回，最终没有完成登录返回的话一定会调用onBackPressed方法。因为只用成功才会自动finish LoginActivity</p>
+<pre><code>@Override
+public void onBackPressed() {
+    super.onBackPressed();
+    setResult(RESULT_CANCELED);
+}
+</code></pre>
+<p>其他功能也类似，比如认证相关的功能。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[LeetCode之位运算]]></title>
         <id>https://philadelphia.github.io/post/leetcode-zhi-wei-yun-suan</id>
@@ -3126,197 +3167,6 @@ onPuase的解释是：onPause(), onStop(), onDestroy() are &quot;killable after&
 <p>参考：</p>
 <p>1.<a href="http://www.jianshu.com/p/6622434511f7" title="http://www.jianshu.com/p/6622434511f7">http://www.jianshu.com/p/6622434511f7</a></p>
 <p>2.<a href="http://blog.csdn.net/lonelyroamer/article/details/8927940" title="http://blog.csdn.net/lonelyroamer/article/details/8927940">http://blog.csdn.net/lonelyroamer/article/details/8927940</a></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[ Android 系统的事件分发机制分析 ]]></title>
-        <id>https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi</id>
-        <link href="https://philadelphia.github.io/post/android-xi-tong-de-shi-jian-fen-fa-ji-zhi-fen-xi">
-        </link>
-        <updated>2019-08-16T10:02:47.000Z</updated>
-        <content type="html"><![CDATA[<p>Android中可以相应事件的控件有View和ViewGroup。其实ViewGroup也是一种View。只不过大部分情况下ViewGroup作为一种View容器来使用了。<br>
-View中有三个关键的方法</p>
-<pre><code>1. public boolean dispatchTouchEvent(MotionEvent event)		//事件分发的方法
-2. public boolean onTouchEvent(MotionEvent event)			//事件处理的方法
-</code></pre>
-<p>ViewGroup中多了以下方法</p>
-<pre><code>public boolean onInterceptTouchEvent(MotionEvent ev)		//事件拦截的方法
-</code></pre>
-<p>Android中touch事件的传递，绝对是先传递到ViewGroup，再传递到View的</p>
-<p>当你点击了某个控件(touch事件发生)，首先会去调用该控件所在布局(ViewGroup)的dispatchTouchEvent方法，然后在布局的</p>
-<p>dispatchTouchEvent方法中找到被点击的相应控件，再去调用该控件的dispatchTouchEvent方法。</p>
-<pre><code>public boolean dispatchTouchEvent(MotionEvent ev) {  
-final int action = ev.getAction();  
-final float xf = ev.getX();  
-final float yf = ev.getY();  
-final float scrolledXFloat = xf + mScrollX;  
-final float scrolledYFloat = yf + mScrollY;  
-final Rect frame = mTempRect;  
-boolean disallowIntercept = (mGroupFlags &amp; FLAG_DISALLOW_INTERCEPT) != 0;  
-if (action == MotionEvent.ACTION_DOWN) {  
-    if (mMotionTarget != null) {  
-        mMotionTarget = null;  
-    }  
-    if (disallowIntercept || !onInterceptTouchEvent(ev)) {  
-        ev.setAction(MotionEvent.ACTION_DOWN);  
-        final int scrolledXInt = (int) scrolledXFloat;  
-        final int scrolledYInt = (int) scrolledYFloat;  
-        final View[] children = mChildren;  
-        final int count = mChildrenCount;  
-        for (int i = count - 1; i &gt;= 0; i--) {  
-            final View child = children[i];  
-            if ((child.mViewFlags &amp; VISIBILITY_MASK) == VISIBLE  
-                    || child.getAnimation() != null) {  
-                child.getHitRect(frame);  
-                if (frame.contains(scrolledXInt, scrolledYInt)) {  
-                    final float xc = scrolledXFloat - child.mLeft;  
-                    final float yc = scrolledYFloat - child.mTop;  
-                    ev.setLocation(xc, yc);  
-                    child.mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
-                    if (child.dispatchTouchEvent(ev))  {  
-                        mMotionTarget = child;  
-                        return true;  
-                    }  
-                }  
-            }  
-        }  
-    }  
-}  
-boolean isUpOrCancel = (action == MotionEvent.ACTION_UP) ||  
-        (action == MotionEvent.ACTION_CANCEL);  
-if (isUpOrCancel) {  
-    mGroupFlags &amp;= ~FLAG_DISALLOW_INTERCEPT;  
-}  
-final View target = mMotionTarget;  
-if (target == null) {  
-    ev.setLocation(xf, yf);  
-    if ((mPrivateFlags &amp; CANCEL_NEXT_UP_EVENT) != 0) {  
-        ev.setAction(MotionEvent.ACTION_CANCEL);  
-        mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
-    }  
-    return super.dispatchTouchEvent(ev);  
-}  
-if (!disallowIntercept &amp;&amp; onInterceptTouchEvent(ev)) {  
-    final float xc = scrolledXFloat - (float) target.mLeft;  
-    final float yc = scrolledYFloat - (float) target.mTop;  
-    mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
-    ev.setAction(MotionEvent.ACTION_CANCEL);  
-    ev.setLocation(xc, yc);  
-    if (!target.dispatchTouchEvent(ev)) {  
-    }  
-    mMotionTarget = null;  
-    return true;  
-}  
-if (isUpOrCancel) {  
-    mMotionTarget = null;  
-}  
-final float xc = scrolledXFloat - (float) target.mLeft;  
-final float yc = scrolledYFloat - (float) target.mTop;  
-ev.setLocation(xc, yc);  
-if ((target.mPrivateFlags &amp; CANCEL_NEXT_UP_EVENT) != 0) {  
-    ev.setAction(MotionEvent.ACTION_CANCEL);  
-    target.mPrivateFlags &amp;= ~CANCEL_NEXT_UP_EVENT;  
-    mMotionTarget = null;  
-}  
-return target.dispatchTouchEvent(ev);  
-}  
-</code></pre>
-<p>从上面的代码可以看出。如果viewgroup的disallowIntercept属性为false(默认是false，也可以通过requestDisallowInterceptTouchEvent方法对这个值进行修改)，或者onInterceptTouchEvent(ev)返回了true，那ViewGroup的<br>
-dispatchTouchEvent()方法也会返回false，事件就不会往下分发了，如果ViewGroup禁用了拦截机制(disallowIntercept=true)或者没有拦截事件(返回false)，事件就会分发给ViewGroup中的 子view了。然后子view开始处理事件了。</p>
-<p><img src="http://img.blog.csdn.net/20130629200236578?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvc2lueXU4OTA4MDc=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/Center" alt=""></p>
-<p>从图中可以看出当ViewGroup分发事件的时候先调用自己的拦截方法，如果拦截方法返回了true，那么事件就不在向下传递给view了。然后ViewGroup就开始自己处理事件了。如果ViewGroup拦截方法返回了false，那么事件就会向下传递给view，然后view开始调用自己的分发方法，然后调用自己的事件处理方法。</p>
-<h2 id="总结">总结</h2>
-<p>如果View设置了<code>setOnTouchListener()</code>方法和<code>setOnLongClick()</code>和 <code>setOnClickListener()</code>方法，那默认情况下onTouch方法会先于<br>
-<code>onClick()</code>, <code>onLongClick()</code>方法调用。</p>
-<pre><code>  button.setOnTouchListener(new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            Log.i(TAG, &quot;button------onTouch: &quot; + event.getAction());
-            return false;
-        }
-    });
-
-
-button.setOnClickListener(new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            Log.i(TAG, &quot;button --- onClick: &quot;);
-        }
-    });
-
-
-09-15 14:08:15.184 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button------onTouch: 0(Down)
-09-15 14:08:15.254 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button------onTouch: 1(Up)
-09-15 14:08:15.273 27948-27948/com.example.drawerlayoutdemo I/MainActivity: button --- onClick:(onClick)
-</code></pre>
-<hr>
-<p>view的<code>dispatchTouchEvent</code>方法（精简后代码）。</p>
-<pre><code>	public boolean dispatchTouchEvent(MotionEvent event) {
-    ...
-    boolean result = false;	// result 为返回值，主要作用是告诉调用者事件是否已经被消费。
-    if (onFilterTouchEventForSecurity(event)) {
-        ListenerInfo li = mListenerInfo;
-        /** 
-         * 如果设置了OnTouchListener，并且当前 View 可点击，就调用监听器的 onTouch 方法，
-         * 如果 onTouch 方法返回值为 true，就设置 result 为 true。
-         */
-        if (li != null &amp;&amp; li.mOnTouchListener != null
-                &amp;&amp; (mViewFlags &amp; ENABLED_MASK) == ENABLED
-                &amp;&amp; li.mOnTouchListener.onTouch(this, event)) {
-            result = true;
-        }
-      
-        /** 
-         * 如果 result 为 false，则调用自身的 onTouchEvent。
-         * 如果 onTouchEvent 返回值为 true，则设置 result 为 true。
-         */
-        if (!result &amp;&amp; onTouchEvent(event)) {
-            result = true;
-        }
-    }
-    ...
-    return result;
-}	
-</code></pre>
-<p>可以看出如果设置了<code>onTouchListener</code>的话。优先调用<code>onTouchListener</code>的<code>onTouch()</code>方法。<br>
-但是如果在OnTouch方法里面返回true的话，就代表消费了事件，该事件不在往下分发，所以View的 <code>onClick</code>，<code>onLongClick</code> 方法就不会被调用了。因为<code>onClick()</code>and <code>onLongClick（）</code>是在view的<code>onTouchevent()</code>方法中调用的。<br>
-如果<code>onTouchListener</code>的<code>onTouch()</code>返回false的话。才会调用view的<code>onTouchEvent(event)</code>方法。</p>
-<pre><code>	public boolean onTouchEvent(MotionEvent event) {
-    ...
-    final int action = event.getAction();
-  	// 检查各种 clickable
-    if (((viewFlags &amp; CLICKABLE) == CLICKABLE ||
-            (viewFlags &amp; LONG_CLICKABLE) == LONG_CLICKABLE) ||
-            (viewFlags &amp; CONTEXT_CLICKABLE) == CONTEXT_CLICKABLE) {
-        switch (action) {
-            case MotionEvent.ACTION_UP:
-                ...
-                removeLongPressCallback();  // 移除长按
-                ...
-                performClick();             // 检查单击
-                ...
-                break;
-            case MotionEvent.ACTION_DOWN:
-                ...
-                checkForLongClick(0);       // 检测长按
-                ...
-                break;
-            ...
-        }
-        return true;                        // ◀︎表示事件被消费
-    }
-    return false;
-}
-</code></pre>
-<p>从View的<code>onTouchevent（）</code>方法中可以看出。<br>
-如果view设置了<code>clickable</code>,<code>longClickable</code>，<code>contextClickable</code>属性中的任何一个。<br>
-或者设置了 <code>onClickListener</code>，<code>onLongClickListener</code>，<code>onContextClickListener</code>中的任何一个<br>
-那个该view就会消费事件。不然不消费事件。，</p>
-<p>从<code>dispatchTouchEvent</code> 和<code>onTouchEvent()</code>方法可以看出。</p>
-<p>1	事件的调度顺序为：<br>
-onTouchListener &gt; onTouchEvent &gt; onLongClickListener &gt; onClickListener</p>
-<p>2: 如果View为Disabled。则：<code>OntouchListener</code>里面的方法不会执行。但是会执行<code>OnTouchEvent(event)</code>方法，也就是说即使view是disabled的，依然可以相应onClick事件。</p>
-<p>3： onTouchEvent方法中的ACTION_UP分支中触发onClick方法。并在这里移除长按监听。因为长按不需要处理ACTION_UP事件。</p>
 ]]></content>
     </entry>
 </feed>
