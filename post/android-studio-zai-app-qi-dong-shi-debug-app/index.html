@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" >
 
-<title>LeetCode之位运算 | philadelphia</title>
+<title>Android Studio 在APP启动时debug app | philadelphia</title>
 <meta name="description" content="德不孤，必有邻">
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -98,94 +98,24 @@
       <div class="main-container">
         <div class="content-container" data-aos="fade-up">
           <div class="post-detail">
-            <h2 class="post-title">LeetCode之位运算</h2>
-            <div class="post-date">2019-11-15</div>
+            <h2 class="post-title">Android Studio 在APP启动时debug app</h2>
+            <div class="post-date">2019-11-20</div>
             
             <div class="post-content">
-              <pre><code class="language-java">//判断一个整数是不是2的N次方
-private boolean is2N(int num) {
-    return (num &amp; (num - 1)) == 0;
-}
-
-//判断一个正整数是奇数还是偶数,即可不是被2整除
-private boolean isEvenNumber(int num) {
-    return (num &amp; 1) == 0;
-}
-
-</code></pre>
-<p>338：https://leetcode-cn.com/problems/counting-bits/</p>
-<p>给定一个非负整数 <strong>num</strong>。计算其二进制数中的 1 的数目。</p>
-<pre><code class="language-java">private int getBit1Count(int number) {
-    int mask = 1;
-    int count = 0;
-    for (int i = 0; i &lt; 32; i++) {
-        if ((number &amp; mask) != 0) {
-            count += 1;
-        }
-        mask &lt;&lt;= 1;
-    }
-
-    return count;
-}
-</code></pre>
-<p>136：https://leetcode-cn.com/problems/single-number/</p>
-<p>给定一个<strong>非空</strong>整数数组，除了某个元素只出现一次以外，其余每个元素均出现两次。找出那个只出现了一次的元素。</p>
-<p>1：</p>
-<pre><code class="language-java">   public int selectSinlgeNumber(int[] array) {
-        // a^a = 0, 0^x = x
-        // a^b^a = a^a^b =b
-        int a = 0;
-        for (int i = 0; i &lt; array.length; i++) {
-            a ^= array[i];
-            Log.i(TAG, &quot;selectSinlgeNumber: &quot; + a);
-        }
-        return a;
-    }
-</code></pre>
-<p>2：</p>
-<pre><code class="language-java">public int selectSinlgeNumber1(int[] array) {
-    HashSet&lt;Integer&gt; hashSet = new HashSet&lt;&gt;();
-    for (int i = 0; i &lt; array.length; i++) {
-        if (!hashSet.add(array[i])) {
-            hashSet.remove(array[i]);
-        }
-    }
-    Integer[] array1 = (Integer[]) hashSet.toArray();
-    return array1[0];
-}
-</code></pre>
-<p>260:https://leetcode-cn.com/problems/single-number-iii/</p>
-<p>给定一个整数数组 <code>nums</code>，其中恰好有两个元素只出现一次，其余所有元素均出现两次。 找出只出现一次的那两个元素。</p>
-<pre><code>public int[] selectTheSinlgeNumbers(int[] array) {
-    int a = 0;
-    for (int i = 0; i &lt; array.length; i++) {
-        a ^= array[i];
-    }
-    int mask = a &amp; -a;
-  
-    int[] b = new int[2];
-
-    for (int j = 0; j &lt; array.length; j++) {
-        if ((mask &amp; array[j]) == 0) {
-            b[0] ^= array[j];
-        } else {
-            b[1] ^= array[j];
-        }
-    }
-    return b;
-}
-</code></pre>
-<p>137:https://leetcode-cn.com/problems/single-number-ii/</p>
-<p>给定一个<strong>非空</strong>整数数组，除了某个元素只出现一次以外，其余每个元素均出现了三次。找出那个只出现了一次的元素。</p>
+              <p>有时候APP一启动就崩溃了，对应Android 就是在Application 的onCreate()方法执行时就崩溃，这个时候我们根本来不及点击debug 按钮，所以我们就无法select a process to attach to debugger.<br>
+我们只能以Debug模式运行APP，麻烦</p>
+<p>我们可以在设置里-开发者选项(前提是已经打开开发者选项了)-选择调试应用(选择我们想要调试的应用)-勾选等待调试器就好了。<br>
+这个时候APP启动后不会继续执行，等我们点击debug 按钮后APP才会继续往下执行，这个时候我们就可以调试了。debug 完毕后关闭就行了。</p>
+<p><img src="https://philadelphia.github.io/post-images/1574246011603.jpg" alt=""></p>
 
             </div>
             
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://philadelphia.github.io/post/tui-song">
+                <a href="https://philadelphia.github.io/post/activity-launchmode-zai-kai-fa-zhong-de-yi-xie-shi-yong">
                   <h3 class="post-title">
-                    推送
+                    Activity launchMode在开发中的一些使用
                   </h3>
                 </a>
               </div>
