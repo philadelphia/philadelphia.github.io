@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-11-20T10:37:36.163Z</updated>
+    <updated>2019-11-20T10:46:11.827Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -19,8 +19,9 @@
         <content type="html"><![CDATA[<p>有时候APP一启动就崩溃了，对应Android 就是在Application 的onCreate()方法执行时就崩溃，这个时候我们根本来不及点击debug 按钮，所以我们就无法select a process to attach to debugger.<br>
 我们只能以Debug模式运行APP，麻烦</p>
 <p>我们可以在<strong>设置</strong>-<strong>开发者选项</strong>(前提是已经打开开发者选项了)-<strong>选择调试应用</strong>(选择我们想要调试的应用)-勾选 <strong>等待调试器</strong> 就好了。<br>
-这个时候APP启动后不会继续执行，等我们点击debug 按钮后APP才会继续往下执行，这个时候我们就可以调试了。debug 完毕后关闭就行了。</p>
-<p><img src="https://philadelphia.github.io/post-images/1574246011603.jpg" alt=""></p>
+<img src="https://philadelphia.github.io/post-images/1574246011603.jpg" alt=""></p>
+<p>这个时候APP启动后不会继续执行，等我们点击debug 按钮后APP才会继续往下执行，这个时候我们就可以调试了。debug 完毕后关闭就行了。<br>
+<img src="https://philadelphia.github.io/post-images/1574246739317.jpg" alt=""></p>
 ]]></content>
     </entry>
     <entry>
