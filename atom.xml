@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-11-19T10:55:27.114Z</updated>
+    <updated>2019-11-20T03:40:17.650Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -36,7 +36,7 @@ intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);<br>
 然后在LogInActivity的onNewIntent()方法中setResult(Activity.Result_OK）来告诉强求页登录成功了，</p>
 <pre><code>@Override
 protected void onNewIntent(Intent intent) {
-    super.onNewIntent(intent);
+      super.onNewIntent(intent);
       setResult(RESULT_OK);
       finish();   
 }
