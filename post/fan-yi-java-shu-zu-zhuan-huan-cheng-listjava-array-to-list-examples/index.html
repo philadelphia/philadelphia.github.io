@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>翻译-Java数组转换成List（Java Array to List Examples） | philadelphia</title>
+<meta name="description" content="德不孤，必有邻">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1574652880400">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+
+  
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css" />
+  
+
+  
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://philadelphia.github.io">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1574652880400" class="site-logo">
+        <h1 class="site-title">philadelphia</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            基础知识
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      德不孤，必有邻
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">翻译-Java数组转换成List（Java Array to List Examples）</h2>
+            <div class="post-date">2019-11-25</div>
+            
+            <div class="post-content">
+              <p>原文链接：https://javadevnotes.com/java-array-to-list-examples</p>
+<p>译文：</p>
+<p>有时候我们需要将数组类型转换成为集合类型，因为后者是一个更为强大的数据结构，java.util.List 有许多普通数组不支持的功能。比如：我们可以通过List的内置方法轻易地检测list是否包含某一个特定的值。下面是一些怎么将数组转换为list的例子。</p>
+<h2 id="通过-javautilarraysaslist将-array-转换成-list"><strong>通过 java.util.Arrays.asList()将 Array 转换成 List</strong></h2>
+<p>Arrays 类有一个方便的方法asList,可以帮助转换任务，下面是语法：<br>
+public static <T> List<T> asList(T... a)<br>
+注意：参数不一定必须是数组，可变参数也可以。它可以创建一个list</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      List&lt;String&gt; myList = Arrays.asList(&quot;Apple&quot;);
+   }
+}
+</code></pre>
+<p>以上代码将穿件一个包含一个元素&quot;Apple&quot;的集合。我们也可以这样做：</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      List&lt;String&gt; myList = Arrays.asList(&quot;Apple&quot;, &quot;Orange&quot;);
+   }
+}
+</code></pre>
+<p>这将生成一个包含两个元素&quot;Apple&quot;,&quot;Orange&quot;的集合</p>
+<p>因为这是一个可变参数。我们可以传递一个数组，数组元素被认定为参数，例子：</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
+      List&lt;String&gt; myList = Arrays.asList(myArray);
+      for (String str : myList) {
+         System.out.println(str);
+      }
+   }
+}
+</code></pre>
+<p>这样,一个String集合被创建出来了。数组myArray被添加进去了。myList 集合有三个元素，一下是输出：</p>
+<p>Apple<br>
+Banana<br>
+Orange</p>
+<h2 id="陷阱">陷阱</h2>
+<p>这个方法有一些问题，传递进去的数组必须是一个对象数组，而不能是一个基本类型数组。比如：</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      int[] myArray = { 1, 2, 3 };
+      List myList = Arrays.asList(myArray);
+      System.out.println(myList.size());
+   }
+}
+</code></pre>
+<p>代码输出是1。为什么呢？因为asList方法期望一个对象的可变参数，但是传递进去的参数是一个基本类型数组，它创建了一个数组集合。所以该集合的为唯一元素是myArray。因此<code>myList.get(0)</code> 将返回与myArray同样的对象。</p>
+<h2 id="aslist创建的对象是固定大小的"><strong>asList()创建的对象是固定大小的</strong></h2>
+<p>asList()方法返回的list对象是固定大小的，不能容纳更多的元素，比如：</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
+      List&lt;String&gt; myList = Arrays.asList(myArray);
+      myList.add(&quot;Guava&quot;);
+   }
+}
+</code></pre>
+<p>输出如下：</p>
+<pre><code>Exception in thread &quot;main&quot; java.lang.UnsupportedOperationException
+	at java.util.AbstractList.add(AbstractList.java:148)
+	at java.util.AbstractList.add(AbstractList.java:108)
+	at Test.main(Test.java:8)
+</code></pre>
+<p>因为myList是固定长度的，不能添加更多元素。</p>
+<p>因为该方法返回的List对象不是java.util包下面的ArrayList，而是Arrays内部的ArrayList类型。改类没有实现add,revmove,clear方法，所以任何对改集合结构修改的调用都将失败。</p>
+<h2 id="将基本数组类型转换成list"><strong>将基本数组类型转换成List</strong></h2>
+<p>正如上面提到的。传递一个基本类型数组到asList方法不生效，一个不引入第三方库的解决办法是通过Java8 的流，例子如下：</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      int[] intArray = { 5, 10, 21 };
+      List myList = Arrays.stream(intArray).boxed()
+            .collect(Collectors.toList());
+   }
+}
+</code></pre>
+<p>数组的每一个元素都被从int转换成了Integer类型(装箱)，数组就被转成了List类型。</p>
+<h2 id="将数组转换成允许添加元素的list"><strong>将数组转换成允许添加元素的List</strong></h2>
+<p>正如上面陷阱部分提到的，Arrays.asList()方法不支持添加或者移除元素。如果你不想这样，下面是可选方案：</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
+      List&lt;String&gt; myList = new ArrayList&lt;String&gt;(Arrays.asList(myArray));
+      myList.add(&quot;Guava&quot;);
+   }
+}
+</code></pre>
+<p>这段代码显式地创建了一个新的ArrayList对象，然后将Arrays.asList的结果添加进去了。因为我们创建了一个ArrayList。所以没有添加移除限制，上面的代码执行结束前有四个元素。不要指望代码执行时抛出异常。</p>
+<h2 id="自己实现array组转换成list"><strong>自己实现Array组转换成List</strong></h2>
+<p>有时候解决问题，使用我们自己的实现方案是更好的。下面是一个将java数组转换成List的简单例子:</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
+      List&lt;String&gt; myList = new ArrayList&lt;String&gt;();
+      for (String str : myArray) {
+         myList.add(str);
+      }
+      System.out.println(myList.size());
+   }
+}
+</code></pre>
+<p>代码的预期输出是3.因为逻辑执行完集合了有3个元素。</p>
+<p>我们代码的负面是代码更长了，而且我们在重复造轮子。好处就是当我们的需求改变时，我们可以顺应自定义。比如：下面的代码，每一个元素都被添加到list中两次</p>
+<pre><code>public class Test {
+   public static void main(String[] args) {
+      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
+      List&lt;String&gt; myList = new ArrayList&lt;String&gt;();
+      for (String str : myArray) {
+         myList.add(str);
+         myList.add(str);
+      }
+      System.out.println(myList.size());
+   }
+}
+</code></pre>
+<p>输出是6，因为数组中的元素都被添加两次。下面是另外一个将String数组转换成List<Integer> 的例子：</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://philadelphia.github.io/post/android-studio-zai-app-qi-dong-shi-debug-app">
+                  <h3 class="post-title">
+                    Android Studio 在APP启动时debug app
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+              
+                <div id="gitalk-container" data-aos="fade-in"></div>
+              
+
+              
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+  
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+
+      var gitalk = new Gitalk({
+        clientID: '',
+        clientSecret: '',
+        repo: '',
+        owner: '',
+        admin: [''],
+        id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+        distractionFreeMode: false  // Facebook-like distraction free mode
+      })
+
+      gitalk.render('gitalk-container')
+
+    </script>
+  
+
+  
+
+
+
+
+  </body>
+</html>
