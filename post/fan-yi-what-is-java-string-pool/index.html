@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" >
 
-<title>关于 | philadelphia</title>
+<title>翻译-Java字符串池是什么？  | philadelphia</title>
 <meta name="description" content="德不孤，必有邻">
 
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -98,14 +98,65 @@
       <div class="main-container">
         <div class="content-container" data-aos="fade-up">
           <div class="post-detail">
-            <h2 class="post-title">关于</h2>
-            <div class="post-date">2019-01-25</div>
+            <h2 class="post-title">翻译-Java字符串池是什么？ </h2>
+            <div class="post-date">2019-11-26</div>
             
             <div class="post-content">
-              <p>这是关于的页面，可以在这里向世界介绍你！</p>
+              <p><a href="https://www.journaldev.com/797/what-is-java-string-pool">原文地址</a></p>
+<p>正如名字所示：Java中字符串池存储在堆内存中。我们知道java中String是一个特殊的类，我们可以通过new 操作符或者使用双引号“”创建一个String对象。</p>
+<ol>
+<li>Java里的字符串池</li>
+<li>字符串池中创建了多少字符串对象？</li>
+</ol>
+<h2 id="java里的字符串池">Java里的字符串池</h2>
+<p>下面是一个图，清晰的解释了java堆内存怎么管理字符串池的。以及当我们使用不同的方式创建字符串时发生了什么。</p>
+<figure data-type="image" tabindex="1"><img src="https://philadelphia.github.io/post-images/1574751374767.png" alt=""></figure>
+<p>字符串池是可行的，只是因为在Java中String是不可变类型的。而且它实现了字符串的interning 概念。<br>
+字符串池是享元设计模式的一个实例。</p>
+<p>字符串池有助于为Java运行时节省了很多的内存空间，即使它使用了更多的时间。</p>
+<p>当我们使用双引号创建字符串时，它首先在字符串池中寻找同样值的字符串，如果找到了就返回该引用。如果没找到，就在池中创建一个新的字符串并返回它的引用。</p>
+<p>然而使用new操作符创建字符串时，我们强制String类在堆内存上创建一个新的String对象。我们可以使用intern() 方法将它放到String池中。或者指向字符串池中有相同值字符串对象的引用。</p>
+<p>下面是java程序：</p>
+<pre><code>package com.journaldev.util;
+
+public class StringPool {
+
+    /**
+    * Java String Pool example
+    * @param args
+    */
+    public static void main(String[] args) {
+        String s1 = &quot;Cat&quot;;
+        String s2 = &quot;Cat&quot;;
+        String s3 = new String(&quot;Cat&quot;);
+        
+        System.out.println(&quot;s1 == s2 :&quot;+(s1==s2));
+        System.out.println(&quot;s1 == s3 :&quot;+(s1==s3));
+    }
+
+}
+</code></pre>
+<p>上面程序输入如下：</p>
+<pre><code>s1 == s2 :true
+s1 == s3 :false
+</code></pre>
+<p>推荐阅读: <a href="https://www.journaldev.com/16928/java-string">Java String Class</a></p>
+<h2 id="字符串池中创建了几个string对象呢">字符串池中创建了几个String对象呢？</h2>
+<p>有时候在Java面试中，你可能被问到关于字符串池的问题，比如，下面的语句创建了几个string.</p>
+<p>String str = new String(&quot;Cat&quot;);</p>
+<p>在上面的语句中，1个或者2个string被创建了，如果字符串池中已经有’cat‘字符串了，就只创建一个String.如果字符串池中没有’cat‘字符串，首先在字符串池中创建一个字符串，然后在堆内存中创建一个字符串，所有总共有2个string对象被创建了。</p>
 
             </div>
             
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://philadelphia.github.io/post/fan-yi-java-shu-zu-zhuan-huan-cheng-listjava-array-to-list-examples">
+                  <h3 class="post-title">
+                    翻译-Java数组转换成List（Java Array to List Examples）
+                  </h3>
+                </a>
+              </div>
             
 
             

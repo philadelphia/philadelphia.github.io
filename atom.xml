@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2019-11-25T03:38:37.485Z</updated>
+    <updated>2019-11-26T07:00:38.366Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -10,6 +10,57 @@
     <logo>https://philadelphia.github.io/images/avatar.png</logo>
     <icon>https://philadelphia.github.io/favicon.ico</icon>
     <rights>All rights reserved 2019, philadelphia</rights>
+    <entry>
+        <title type="html"><![CDATA[翻译-Java字符串池是什么？ ]]></title>
+        <id>https://philadelphia.github.io/post/fan-yi-what-is-java-string-pool</id>
+        <link href="https://philadelphia.github.io/post/fan-yi-what-is-java-string-pool">
+        </link>
+        <updated>2019-11-26T06:07:58.000Z</updated>
+        <content type="html"><![CDATA[<p><a href="https://www.journaldev.com/797/what-is-java-string-pool">原文地址</a></p>
+<p>正如名字所示：Java中字符串池存储在堆内存中。我们知道java中String是一个特殊的类，我们可以通过new 操作符或者使用双引号“”创建一个String对象。</p>
+<ol>
+<li>Java里的字符串池</li>
+<li>字符串池中创建了多少字符串对象？</li>
+</ol>
+<h2 id="java里的字符串池">Java里的字符串池</h2>
+<p>下面是一个图，清晰的解释了java堆内存怎么管理字符串池的。以及当我们使用不同的方式创建字符串时发生了什么。</p>
+<figure data-type="image" tabindex="1"><img src="https://philadelphia.github.io/post-images/1574751374767.png" alt=""></figure>
+<p>字符串池是可行的，只是因为在Java中String是不可变类型的。而且它实现了字符串的interning 概念。<br>
+字符串池是享元设计模式的一个实例。</p>
+<p>字符串池有助于为Java运行时节省了很多的内存空间，即使它使用了更多的时间。</p>
+<p>当我们使用双引号创建字符串时，它首先在字符串池中寻找同样值的字符串，如果找到了就返回该引用。如果没找到，就在池中创建一个新的字符串并返回它的引用。</p>
+<p>然而使用new操作符创建字符串时，我们强制String类在堆内存上创建一个新的String对象。我们可以使用intern() 方法将它放到String池中。或者指向字符串池中有相同值字符串对象的引用。</p>
+<p>下面是java程序：</p>
+<pre><code>package com.journaldev.util;
+
+public class StringPool {
+
+    /**
+    * Java String Pool example
+    * @param args
+    */
+    public static void main(String[] args) {
+        String s1 = &quot;Cat&quot;;
+        String s2 = &quot;Cat&quot;;
+        String s3 = new String(&quot;Cat&quot;);
+        
+        System.out.println(&quot;s1 == s2 :&quot;+(s1==s2));
+        System.out.println(&quot;s1 == s3 :&quot;+(s1==s3));
+    }
+
+}
+</code></pre>
+<p>上面程序输入如下：</p>
+<pre><code>s1 == s2 :true
+s1 == s3 :false
+</code></pre>
+<p>推荐阅读: <a href="https://www.journaldev.com/16928/java-string">Java String Class</a></p>
+<h2 id="字符串池中创建了几个string对象呢">字符串池中创建了几个String对象呢？</h2>
+<p>有时候在Java面试中，你可能被问到关于字符串池的问题，比如，下面的语句创建了几个string.</p>
+<p>String str = new String(&quot;Cat&quot;);</p>
+<p>在上面的语句中，1个或者2个string被创建了，如果字符串池中已经有’cat‘字符串了，就只创建一个String.如果字符串池中没有’cat‘字符串，首先在字符串池中创建一个字符串，然后在堆内存中创建一个字符串，所有总共有2个string对象被创建了。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[翻译-Java数组转换成List（Java Array to List Examples）]]></title>
         <id>https://philadelphia.github.io/post/fan-yi-java-shu-zu-zhuan-huan-cheng-listjava-array-to-list-examples</id>
@@ -2747,248 +2798,6 @@ Request toRequest(Object... args) throws IOException {
   return requestBuilder.build();
 }
 </code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[OkHttp 源码分析]]></title>
-        <id>https://philadelphia.github.io/post/okhttp-yuan-ma-fen-xi</id>
-        <link href="https://philadelphia.github.io/post/okhttp-yuan-ma-fen-xi">
-        </link>
-        <updated>2019-08-16T10:05:29.000Z</updated>
-        <content type="html"><![CDATA[<p>基于OkHttp3.11.0</p>
-<pre><code>implementation(&quot;com.squareup.okhttp3:okhttp:3.11.0&quot;)
-</code></pre>
-<p>网络框架的核心思想都是构建基本的执行单元之后(1)，根据任务类型放入对应的任务队列里(2)，再由线程池去执行(3)。OKHttp也不列外。</p>
-<h1 id="初始化okhttpclient">初始化OKHttpClient</h1>
-<p>OKHttpclient采用了Builder模式创建</p>
-<pre><code class="language-java">OkHttpClient okHttpClient = new OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.SECONDS)
-        .writeTimeout(5, TimeUnit.SECONDS)
-        .build();
-</code></pre>
-<h1 id="构建执行单元">构建执行单元</h1>
-<h2 id="1get请求">1：GET请求</h2>
-<pre><code class="language-java">Request request = new Request.Builder().url(&quot;www.baidu.com&quot;)
-        .get() // 默认就是get请求
-        .build();
-</code></pre>
-<h2 id="2-post请求">2: POST请求</h2>
-<p>POST与GET多了一个body。</p>
-<pre><code class="language-java">FormBody body = new FormBody.Builder()
-        .add(&quot;key&quot;, &quot;value&quot;)
-        .add(&quot;key1&quot;, &quot;value1&quot;)
-        .build();
-
-Request post = new Request.Builder().url(&quot;www.baidu.com&quot;)
-        .post(body)
-        .build();
-</code></pre>
-<h1 id="执行">执行</h1>
-<h2 id="1同步执行">1：同步执行</h2>
-<pre><code class="language-Java">try {
-    Response response = okHttpClient.newCall(post).execute();
-    if (response.code() ==  200){
-     	 }
-
-} catch (IOException e) {
-
-}
-</code></pre>
-<p>然后就可以根据response的结果操作了。</p>
-<h2 id="2异步执行">2：异步执行</h2>
-<pre><code class="language-java">okHttpClient.newCall(request).enqueue(new Callback() {
-    @Override
-    public void onFailure(Call call, IOException e) {
-        
-    }
-
-    @Override
-    public void onResponse(Call call, Response response) throws IOException {
-
-    }
-});
-</code></pre>
-<p>在对应的回调函数里做对应的业务逻辑。</p>
-<p>以上就是OKHttp的使用的基本使用。</p>
-<p>这里Request就是请求单元,不论是同步执行还是异步执行，都调用okHttpClient.newCall(request) 生成了一个RealCall对象，然后分别调用该对象的execute(同步执行)方法或者enqueue(异步执行)方法。</p>
-<pre><code class="language-Java">@Override public Call newCall(Request request) {
-  return RealCall.newRealCall(this, request, false /* for web socket */);
-}
-</code></pre>
-<p>OKHttp的newCall方法调用RealCall的静态方法newRealCall().</p>
-<pre><code class="language-Java">static RealCall newRealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
-  // Safely publish the Call instance to the EventListener.
-  RealCall call = new RealCall(client, originalRequest, forWebSocket);
-  call.eventListener = client.eventListenerFactory().create(call);
-  return call;
-}
-</code></pre>
-<pre><code class="language-Java">private RealCall(OkHttpClient client, Request originalRequest, boolean forWebSocket) {
-  this.client = client;
-  this.originalRequest = originalRequest;
-  this.forWebSocket = forWebSocket;
-  this.retryAndFollowUpInterceptor = new RetryAndFollowUpInterceptor(client, forWebSocket);
-}
-</code></pre>
-<p>可以看到，newRealCall方法将client作为自己构造函数的参数传入</p>
-<p>下面这个方法是RealCall对象的execute方法</p>
-<pre><code>@Override public Response execute() throws IOException {
-  synchronized (this) {
-    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
-    executed = true;
-  }
-  captureCallStackTrace();
-  eventListener.callStart(this);
-  try {
-    client.dispatcher().executed(this);
-    Response result = getResponseWithInterceptorChain();
-    if (result == null) throw new IOException(&quot;Canceled&quot;);
-    return result;
-  } catch (IOException e) {
-    eventListener.callFailed(this, e);
-    throw e;
-  } finally {
-    client.dispatcher().finished(this);
-  }
-}
-</code></pre>
-<p>可以看到调用了 client.dispatcher().executed(this);</p>
-<p>最中调用 Response result = getResponseWithInterceptorChain();并返回Result对象</p>
-<p>如果发生了异常则调用    eventListener.callFailed(this, e);</p>
-<p>而最终这会调用    client.dispatcher().finished(this)，来结束这个call。</p>
-<p>这里面有一个很重要的类Dispatcher，它是OKHttpclient的一个内部成员，同时OKHttpclient是request的内部成员</p>
-<pre><code class="language-java">public final class Dispatcher {
-      private int maxRequests = 64;  //最大的请求数量
-      private int maxRequestsPerHost = 5; //同义主机同时支持的最大请求数
-      private @Nullable Runnable idleCallback;
-
-      /** Executes calls. Created lazily. */
-      private @Nullable ExecutorService executorService;
-
-      /** Ready async calls in the order they'll be run. */
-      private final Deque&lt;AsyncCall&gt; readyAsyncCalls = new ArrayDeque&lt;&gt;();//准备执行的异步任务队列
-
-      /** Running asynchronous calls. Includes canceled calls that haven't finished yet. */
-      private final Deque&lt;AsyncCall&gt; runningAsyncCalls = new ArrayDeque&lt;&gt;(); //正在执行的异步任务队列
-
-      /** Running synchronous calls. Includes canceled calls that haven't finished yet. */
-      private final Deque&lt;RealCall&gt; runningSyncCalls = new ArrayDeque&lt;&gt;(); //正在运行的同步任务队列
-  
-  }
-</code></pre>
-<p>分别看到，这个类的同步执行方法是</p>
-<pre><code>synchronized void executed(RealCall call) {
-  runningSyncCalls.add(call);
-}
-</code></pre>
-<p>将改call假如同步执行队列中。</p>
-<pre><code>synchronized void enqueue(AsyncCall call) {
-  if (runningAsyncCalls.size() &lt; maxRequests &amp;&amp; runningCallsForHost(call) &lt; maxRequestsPerHost) {
-    runningAsyncCalls.add(call);
-    executorService().execute(call);
-  } else {
-    readyAsyncCalls.add(call);
-  }
-}
-</code></pre>
-<p>异步执行方法是先进行判断，只有正在执行的异步任务队列长度小于了最大的请求数并且改请求的主机的正在请求数量小于每个主句的同时的最大连接数世才将改请求加入到正在执行的异步任务队列里，然后由具体的执行任务来执行这个请求任务。</p>
-<p>不然就把这个任务加入到待执行的异步执行队队列。</p>
-<p>这里RealCall 对象突然就变成了一个AsyncCall对象</p>
-<pre><code class="language-Java">@Override public void enqueue(Callback responseCallback) {
-  synchronized (this) {
-    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
-    executed = true;
-  }
-  captureCallStackTrace();
-  eventListener.callStart(this);
-  client.dispatcher().enqueue(new AsyncCall(responseCallback));
-}
-</code></pre>
-<p>在RealCall执行enqueue方法时将一个回调对象作为构造参数生成了一个AsyncCall对象，传入了Dispatcher的enqueue方法。</p>
-<pre><code class="language-java">final class AsyncCall extends NamedRunnable {
-      private final Callback responseCallback;
-
-      AsyncCall(Callback responseCallback) {
-        super(&quot;OkHttp %s&quot;, redactedUrl());
-        this.responseCallback = responseCallback;
-      }
-  }
-</code></pre>
-<p>Async对象其实继承了NamedRunnable。而NamedRunnable实现了Runnable接口，可以看出其实Async其实就是一个命名后的runnable对象。</p>
-<p>这里把RealCall同步执行和异步执行的代码列出来</p>
-<p>1：同步执行</p>
-<pre><code class="language-Java">@Override public Response execute() throws IOException {
-  synchronized (this) {
-    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
-    executed = true;
-  }
-  captureCallStackTrace();
-  eventListener.callStart(this);
-  try {
-    client.dispatcher().executed(this);
-    Response result = getResponseWithInterceptorChain();
-    if (result == null) throw new IOException(&quot;Canceled&quot;);
-    return result;
-  } catch (IOException e) {
-    eventListener.callFailed(this, e);
-    throw e;
-  } finally {
-    client.dispatcher().finished(this);
-  }
-}
-</code></pre>
-<p>2：异步执行</p>
-<p>最终调用AsyncCall对象的execute方法</p>
-<pre><code>@Override protected void execute() {
-    boolean signalledCallback = false;
-    try {
-      Response response = getResponseWithInterceptorChain();
-      if (retryAndFollowUpInterceptor.isCanceled()) {
-        signalledCallback = true;
-        responseCallback.onFailure(RealCall.this, new IOException(&quot;Canceled&quot;));
-      } else {
-        signalledCallback = true;
-        responseCallback.onResponse(RealCall.this, response);
-      }
-    } catch (IOException e) {
-      if (signalledCallback) {
-        // Do not signal the callback twice!
-        Platform.get().log(INFO, &quot;Callback failure for &quot; + toLoggableString(), e);
-      } else {
-        eventListener.callFailed(RealCall.this, e);
-        responseCallback.onFailure(RealCall.this, e);
-      }
-    } finally {
-      client.dispatcher().finished(this);
-    }
-  }
-}
-</code></pre>
-<p>可以看出不管是同步执行还是异步执行，最终都是调用getResponseWithInterceptorChain();</p>
-<p>方法得出Response</p>
-<pre><code class="language-Java">Response getResponseWithInterceptorChain() throws IOException {
-  // Build a full stack of interceptors.
-  List&lt;Interceptor&gt; interceptors = new ArrayList&lt;&gt;();
-  interceptors.addAll(client.interceptors());
-  interceptors.add(retryAndFollowUpInterceptor);
-  interceptors.add(new BridgeInterceptor(client.cookieJar()));
-  interceptors.add(new CacheInterceptor(client.internalCache()));
-  interceptors.add(new ConnectInterceptor(client));
-  if (!forWebSocket) {
-    interceptors.addAll(client.networkInterceptors());
-  }
-  interceptors.add(new CallServerInterceptor(forWebSocket));
-
-  Interceptor.Chain chain = new RealInterceptorChain(interceptors, null, null, null, 0,
-      originalRequest, this, eventListener, client.connectTimeoutMillis(),
-      client.readTimeoutMillis(), client.writeTimeoutMillis());
-
-  return chain.proceed(originalRequest);
-}
-</code></pre>
-<p>在这个方法里首先将用户添加到OKHttpClient上的应用拦截器添加到拦截器列表里。然后一次添加重试重定向拦截器, 头部信息处理拦截器，缓存拦截器， 连接拦截器，然后再加上OKhttpclient配置的网络拦截器，最后添加最终发起请求的拦截器。</p>
-<p>拦截器这里使用了不完整的责任链模式，依次处理返回的response，最后返回最终的response。</p>
 ]]></content>
     </entry>
 </feed>
