@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>阻塞队列 | philadelphia</title>
+<meta name="description" content="德不孤，必有邻">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1593192466293">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+
+  
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css" />
+  
+
+  
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://philadelphia.github.io">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1593192466293" class="site-logo">
+        <h1 class="site-title">philadelphia</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            基础知识
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      德不孤，必有邻
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">阻塞队列</h2>
+            <div class="post-date">2020-06-27</div>
+            
+            <div class="post-content">
+              <p>阻塞队列，也就是 BlockingQueue，它是一个接口，如代码所示：</p>
+<pre><code>public interface BlockingQueue&lt;E&gt; extends Queue&lt;E&gt;{...}
+</code></pre>
+<p>BlockingQueue 继承了 Queue 接口，是队列的一种。Queue 和 BlockingQueue 都是在 Java 5 中加入的。</p>
+<p>BlockingQueue 是线程安全的，我们在很多场景下都可以利用线程安全的队列来优雅地解决我们业务自身的线程安全问题。比如说，使用生产者/消费者模式的时候，我们生产者只需要往队列里添加元素，而消费者只需要从队列里取出它们就可以了<br>
+既然队列本身是线程安全的，队列可以安全地从一个线程向另外一个线程传递数据，所以我们的生产者/消费者直接使用线程安全的队列就可以，而不需要自己去考虑更多的线程安全问题。这也就意味着，考虑锁等线程安全问题的重任从“你”转移到了“队列”上，降低了我们开发的难度和工作量。<br>
+Java 提供的线程安全的队列（也称为并发队列）分为阻塞队列和非阻塞队列两大类。<br>
+<img src="https://philadelphia.github.io/post-images/1593189553251.png" alt=""><br>
+可以看出Queue接口提供了以上方法。<br>
+而BlockingQueue又新增了get()和put()方法。<br>
+把 BlockingQueue 中最常用的和添加、删除相关的 8 个方法列出来，并且把它们分为三组，每组方法都和添加、移除元素相关。</p>
+<p>1：添加元素</p>
+<pre><code>boolean add(E e) ;
+boolean offer(E e);
+void put(E e);
+</code></pre>
+<p>2:删除元素</p>
+<pre><code>E remove() ;
+E get();
+</code></pre>
+<p>3.获取队列头部元素</p>
+<pre><code>E element();
+E peek();
+</code></pre>
+<p>这三组方法由于功能很类似，所以比较容易混淆。它们的区别仅在于特殊情况：当队列满了无法添加元素，或者是队列空了无法移除元素时，不同组的方法对于这种特殊情况会有不同的处理方式：</p>
+<p>1：抛出异常：add、remove、element<br>
+2：返回结果但不抛出异常：offer、poll、peek<br>
+3：阻塞：put、take</p>
+<h2 id="第一组add-remove-element">第一组：add、remove、element</h2>
+<h3 id="add">add()</h3>
+<p>方法向队列中添加一个元素，如果队列没有满，这个时候添加成功，返回true<br>
+如果此时队列已经满了，则会这届抛出一个异常</p>
+<h3 id="remove">remove</h3>
+<p>remove方法从队列中删除头部元素，<br>
+如果队列不为空，则将队列头部元素从队列中移出并返回队改元素<br>
+如果队列为0，则直接抛出一个NoSuchElementException 异常</p>
+<h3 id="element方法">element方法</h3>
+<p>该方法返回队列头部元素<br>
+如果队列不为空，则直接返回队列头部元素。如果队列为空，则直接抛出NoSuchElementException<br>
+改方法和remove方法的区别就是该方法只会去队列的头部元素而不会删除头部元素</p>
+<h2 id="第二组offer-poll-peek">第二组：offer、poll、peek</h2>
+<p>第二组方法相比于第一组而言要友好一些，当发现队列满了无法添加，或者队列为空无法删除的时候，第二组方法会给一个提示，而不是抛出一个异常。</p>
+<h3 id="offer-方法">offer 方法</h3>
+<p>offer 方法用来插入一个元素，并用返回值来提示插入是否成功。如果添加成功会返回 true，而如果队列已经满了，此时继续调用 offer 方法的话，它不会抛出异常，只会返回一个错误提示：false</p>
+<h3 id="poll-方法">poll 方法</h3>
+<p>poll 方法和第一组的 remove 方法是对应的，作用也是移除并返回队列的头节点。但是如果当队列里面是空的，没有任何东西可以移除的时候，便会返回 null 作为提示。正因如此，我们是不允许往队列中插入 null 的，否则我们没有办法区分返回的 null 是一个提示还是一个真正的元素</p>
+<h3 id="peek-方法">peek 方法</h3>
+<p>peek 方法和第一组的 element 方法是对应的，意思是返回队列的头元素但并不删除。如果队列里面是空的，它便会返回 null 作为提示</p>
+<p>带超时时间的 offer 和 poll</p>
+<p>offer 和 poll 都有带超时时间的重载方法。<br>
+offer(E e, long timeout, TimeUnit unit)</p>
+<p>它有三个参数，分别是元素、超时时长和时间单位。通常情况下，这个方法会插入成功并返回 true；如果队列满了导致插入不成功，在调用带超时时间重载方法的 offer 的时候，则会等待指定的超时时间，如果时间到了依然没有插入成功，就会返回 false</p>
+<pre><code>poll(long timeout, TimeUnit unit)
+</code></pre>
+<p>带时间参数的 poll 方法和 offer 类似：如果能够移除，便会立刻返回这个节点的内容；如果队列是空的就会进行等待，等待时间正是我们指定的时间，直到超时时间到了，如果队列里依然没有元素可供移除，便会返回 null 作为提示</p>
+<h2 id="第三组put-take">第三组：put、take</h2>
+<p>这两个方法是阻塞队列特有的，Queue接口并不存在这个方法的声明。<br>
+这两个方法的特定是在无法完成操作是会阻塞线程、</p>
+<h3 id="put-方法">put 方法</h3>
+<p>put 方法的作用是插入元素。通常在队列没满的时候是正常的插入，但是如果队列已满就无法继续插入，这时它既不会立刻返回 false 也不会抛出异常，而是让插入的线程陷入阻塞状态，直到队列里有了空闲空间，此时队列就会让之前的线程解除阻塞状态，并把刚才那个元素添加进去</p>
+<h3 id="take-方法">take 方法</h3>
+<p>take 方法的作用是获取并移除队列的头结点。通常在队列里有数据的时候会正常取出数据并删除；但是如果执行 take 的时候队列里无数据，则阻塞，直到队列里有数据；一旦队列里有数据了，就会立刻解除阻塞状态，并且取到数据</p>
+<p>总和以上的分析，可以将以上分方法的区别用一个表格表示<br>
+<img src="https://philadelphia.github.io/post-images/1593191082633.png" alt=""></p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://philadelphia.github.io/post/fan-yi-what-is-java-string-pool">
+                  <h3 class="post-title">
+                    翻译-Java字符串池是什么？ 
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+              
+                <div id="gitalk-container" data-aos="fade-in"></div>
+              
+
+              
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+  
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+
+      var gitalk = new Gitalk({
+        clientID: '',
+        clientSecret: '',
+        repo: '',
+        owner: '',
+        admin: [''],
+        id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+        distractionFreeMode: false  // Facebook-like distraction free mode
+      })
+
+      gitalk.render('gitalk-container')
+
+    </script>
+  
+
+  
+
+
+
+
+  </body>
+</html>
