@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2020-06-28T07:36:17.606Z</updated>
+    <updated>2020-06-28T07:38:36.415Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -167,7 +167,7 @@ service.scheduleWithFixedDelay(new Task(), 10, 10, TimeUnit.SECONDS);
 </code></pre>
 <h3 id="forkjoinpool">ForkJoinPool</h3>
 <p>没怎么用过呢。</p>
-<h3 id="为什么不应该自动创建线程池">为什么不应该自动创建线程池</h3>
+<h2 id="为什么不应该自动创建线程池">为什么不应该自动创建线程池</h2>
 <p>自动创建线程池就是直接调用 Executors 的各种方法来生成前面学过的常见的线程池，例如 Executors.newCachedThreadPool()。但这样做是有一定风险的，接下来我们就来逐一分析自动创建线程池可能带来哪些问题。</p>
 <h3 id="fixedthreadpool-2">FixedThreadPool</h3>
 <pre><code>public static ExecutorService newFixedThreadPool(int nThreads) {
