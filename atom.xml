@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2020-06-28T07:38:36.415Z</updated>
+    <updated>2020-06-30T02:27:07.839Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -10,6 +10,473 @@
     <logo>https://philadelphia.github.io/images/avatar.png</logo>
     <icon>https://philadelphia.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, philadelphia</rights>
+    <entry>
+        <title type="html"><![CDATA[ 使用Callable 和Future创建线程]]></title>
+        <id>https://philadelphia.github.io/post/shi-yong-callable-he-future-chuang-jian-xian-cheng</id>
+        <link href="https://philadelphia.github.io/post/shi-yong-callable-he-future-chuang-jian-xian-cheng">
+        </link>
+        <updated>2020-06-30T02:25:43.000Z</updated>
+        <content type="html"><![CDATA[<p>出来常用的创建线程的方式，我们也可以使用Callable和Future创建线程。前面已经说过，这种方式的本质上和其他创建线程的方式是一致的，只有这种创建线程的方式是可以回去线程的返回结果的。</p>
+<p>传统的runnable接口的定义</p>
+<pre><code>public interface Runnable {
+    /**
+     * When an object implementing interface &lt;code&gt;Runnable&lt;/code&gt; is used
+     * to create a thread, starting the thread causes the object's
+     * &lt;code&gt;run&lt;/code&gt; method to be called in that separately executing
+     * thread.
+     * &lt;p&gt;
+     * The general contract of the method &lt;code&gt;run&lt;/code&gt; is that it may
+     * take any action whatsoever.
+     *
+     * @see     java.lang.Thread#run()
+     */
+    public abstract void run();
+}
+</code></pre>
+<p>runnable只提供了一个返回void的run方法，而且执行失败也不会抛出异常。</p>
+<p>这就导致使用runnable方式创建的线程执行时我们无法获取到返回值，而且失败我们也无法获取到具体的失败信息。</p>
+<p>而且提交到线程池的Runnable任务时无法取消的，这就意味着如果我们想要取消某个任务是不可能的，只能关闭整个线程池。</p>
+<p>综合以上，java在JDK1.5退出了Callable和Future。</p>
+<pre><code>@FunctionalInterface
+public interface Callable&lt;V&gt; {
+    /**
+     * Computes a result, or throws an exception if unable to do so.
+     *
+     * @return computed result
+     * @throws Exception if unable to compute a result
+     */
+    V call() throws Exception;
+}
+</code></pre>
+<p>从Callable接口的定义可以看出其支持泛型，返回值类型为传入的泛型参数。而且支持抛出异常。</p>
+<p>下面是Future接口的定义</p>
+<pre><code>public interface Future&lt;V&gt; {
+
+    /**
+     * 尝试去取消整个任务，可能还失败如果该任务已经完成或者已经被取消，或者由于其他原因不能被取消。
+     * 取过取消任务成功，整个任务的cancel方法被调用时任务还没有开始。如果这个任务已经启动了，参数 
+   	 *	  mayInterruptIfRunning 决定了是否给执行任务的线程发送中断信号。
+   	 *	  这个方法返回后，后续的isDone调用总是返回true。
+   	 *	  后续的isCancelled调用总是返回true，如果这个方法返回了true。
+     */
+    boolean cancel(boolean mayInterruptIfRunning);
+
+    /**
+     * Returns {@code true} if this task was cancelled before it completed
+     * normally.
+     *
+     * @return {@code true} if this task was cancelled before it completed
+     */
+    boolean isCancelled();
+
+    /**
+     * Returns {@code true} if this task completed.
+     *
+     * Completion may be due to normal termination, an exception, or
+     * cancellation -- in all of these cases, this method will return
+     * {@code true}.
+     *
+     * @return {@code true} if this task completed
+     */
+    boolean isDone();
+
+    /**
+     * Waits if necessary for the computation to complete, and then
+     * retrieves its result.
+     *
+     * @return the computed result
+     * @throws CancellationException if the computation was cancelled
+     * @throws ExecutionException if the computation threw an
+     * exception
+     * @throws InterruptedException if the current thread was interrupted
+     * while waiting
+     */
+    V get() throws InterruptedException, ExecutionException;
+
+    /**
+     * Waits if necessary for at most the given time for the computation
+     * to complete, and then retrieves its result, if available.
+     *
+     * @param timeout the maximum time to wait
+     * @param unit the time unit of the timeout argument
+     * @return the computed result
+     * @throws CancellationException if the computation was cancelled
+     * @throws ExecutionException if the computation threw an
+     * exception
+     * @throws InterruptedException if the current thread was interrupted
+     * while waiting
+     * @throws TimeoutException if the wait timed out
+     */
+    V get(long timeout, TimeUnit unit)
+        throws InterruptedException, ExecutionException, TimeoutException;
+}
+</code></pre>
+<p>Future接口提供了4个方法</p>
+<pre><code>boolean cancel(boolean mayInterruptIfRunning);
+boolean isCancelled();
+boolean isDone();
+V get() throws InterruptedException, ExecutionException;
+V get(long timeout, TimeUnit unit)
+        throws InterruptedException, ExecutionException, TimeoutException;
+</code></pre>
+<h3 id="get">get</h3>
+<p>get方法用于获取Callable的执行结果，通常有5中情况发生</p>
+<ol>
+<li>
+<p>任务已经正常结束，此时获取到Callable的返回结果。</p>
+</li>
+<li>
+<p>任务还没有结束，这是很有可能的，因为我么你通常将任务放到线程池中，有可能你调用get方法是，任务还在任务队列中没被执行呢，另外一种情况是任务已经执行了，但是可能需要很长时间才能返回，</p>
+<p>这两种情况下，调用get方法时自然是获取不到结果的，都会阻塞当前线程。知道任务完成返回结果。</p>
+</li>
+<li>
+<p>任务执行过程中被cancel，这个时候任务会抛出CancellationException异常</p>
+</li>
+<li>
+<p>任务执行过程中失败，这个时候任务会抛出ExecutionException异常。</p>
+</li>
+<li>
+<p>任务超时。get方法有个带有参数的重载方法。调用带有延迟参数的get方法后，如果在指定时间内任务执行完毕，返回结果，如果任务无法完成工作，直接抛出TimeoutException异常。</p>
+</li>
+</ol>
+<h3 id="isdone">isDone</h3>
+<p>用来判断任务是否执行完毕</p>
+<p>如果任务完成了返回true。如果任务没有完成返回false。</p>
+<p>需要注意的是该方法返回true不代表任务是成功执行了，只代表任务结束了。如果任务执行过程中被取消了。该方法依旧返回true。因为该任务确实执行完毕了，以后不会在被执行了。</p>
+<h2 id="用-futuretask-来创建-future">用 FutureTask 来创建 Future</h2>
+<pre><code>ExecutorService executorService = Executors.newCachedThreadPool();
+Future&lt;Integer&gt; submit = executorService.submit(new Callable&lt;Integer&gt;() {
+    @Override
+    public Integer call() throws Exception {
+        return null;
+    }
+});
+</code></pre>
+<p>除了使用线程池提交一个Callable任务会返回一个Future对象外，我们也可以使用FutureTask来获取Future类的结果</p>
+<pre><code>Callable&lt;Integer&gt; callable = new Callable&lt;Integer&gt;() {
+    @Override
+    public Integer call() throws Exception {
+        return null;
+    }
+};
+FutureTask&lt;Integer&gt; integerFutureTask = new FutureTask&lt;&gt;(callable);
+new Thread(integerFutureTask).start();
+</code></pre>
+<p>典型用法是，把 Callable 实例当作 FutureTask 构造函数的参数，生成 FutureTask 的对象，然后把这个对象当作一个 Runnable 对象，这里使用了桥接的设计模式。放到线程池中或另起线程去执行，最后还可以通过 FutureTask 获取任务执行的结果。但是使用Future获取结果时需要注意，get方法在没有任务没有执行完毕时会阻塞调用者线程。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Java-线程基础]]></title>
+        <id>https://philadelphia.github.io/post/java-xian-cheng-ji-chu</id>
+        <link href="https://philadelphia.github.io/post/java-xian-cheng-ji-chu">
+        </link>
+        <updated>2020-06-30T02:24:27.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="创建线程">创建线程</h2>
+<p>在java编程中，我们可以继承Tread类并复写其run方法，然后new 一个该对象，并调用其start方法，这样就可以开启一个新线程了。</p>
+<p>或者创建实现一个Runnable 接口的类。然后将该对象传递给一个Thread队象。这样也可以开启一个线程。</p>
+<p>另外还一个使用线程池创建线程，或者使用带有返回值的Callable创建线程</p>
+<p>其实这些方式的本质都是一样的，本质上只有一种创建线程的方式。</p>
+<p>我们可以看一下JDK中Thread的定义</p>
+<pre><code>public class Thread implements Runnable {
+
+    /* What will be run. */
+    private Runnable target;
+}
+</code></pre>
+<p>发现Thread 类也实现了Runnable 接口。那么肯定也复写了run方法。</p>
+<p>我们创建Thread对象后需要调用其start方法才能开启线程。看下start方法的定义。</p>
+<pre><code>/**
+ *	开启线程的执行，JVM 调用当前线程的run方法。
+ * Causes this thread to begin execution; the Java Virtual Machine
+ * calls the &lt;code&gt;run&lt;/code&gt; method of this thread.
+ * &lt;p&gt;
+ * 结果会有两个线程并发执行。当前线程(调用start方法的线程)和另一个线程(执行run方法的线程)
+ * The result is that two threads are running concurrently: the
+ * current thread (which returns from the call to the
+ * &lt;code&gt;start&lt;/code&gt; method) and the other thread (which executes its
+ * &lt;code&gt;run&lt;/code&gt; method).
+ * &lt;p&gt;
+ * 开启一个线程超过一次不合法的。一个线程一旦完成不能重新启动。
+ * It is never legal to start a thread more than once.
+ * In particular, a thread may not be restarted once it has completed
+ * execution.
+ *
+ * @exception  IllegalThreadStateException  if the thread was already
+ *               started.
+ * @see        #run()
+ * @see        #stop()
+ */
+public synchronized void start() {
+    /**
+     * This method is not invoked for the main method thread or &quot;system&quot;
+     * group threads created/set up by the VM. Any new functionality added
+     * to this method in the future may have to also be added to the VM.
+     *
+     * A zero status value corresponds to state &quot;NEW&quot;.
+     */
+    // Android-changed: Replace unused threadStatus field with started field.
+    // The threadStatus field is unused on Android.
+    if (started)
+        throw new IllegalThreadStateException();
+
+    /* Notify the group that this thread is about to be started
+     * so that it can be added to the group's list of threads
+     * and the group's unstarted count can be decremented. */
+    group.add(this);
+
+    // Android-changed: Use field instead of local variable.
+    // It is necessary to remember the state of this across calls to this method so that it
+    // can throw an IllegalThreadStateException if this method is called on an already
+    // started thread.
+    started = false;
+    try {
+        // Android-changed: Use Android specific nativeCreate() method to create/start thread.
+        // start0();
+        nativeCreate(this, stackSize, daemon);
+        started = true;
+    } finally {
+        try {
+            if (!started) {
+                group.threadStartFailed(this);
+            }
+        } catch (Throwable ignore) {
+            /* do nothing. If start0 threw a Throwable then
+              it will be passed up the call stack */
+        }
+    }
+}
+</code></pre>
+<p>看下Thread类的run方法。</p>
+<pre><code>@Override
+public void run() {
+    if (target != null) {
+        target.run();
+    }
+}
+</code></pre>
+<p>可以发现其run方法里面调用了target对象的run 方法，这个target对象就是我们传递进来的runnable对象。</p>
+<p>如果我们采用继承Thread 并复写run方法的方式实现线程，这个时候虽然没有target 了，但是我们重写了run方法，所以这个时候jvm调用run的时候实际上执行的是我们复写的run 方法。</p>
+<p>所以说这两种创建线程的方法本质上是一种。</p>
+<p>实际编程中，受限于java的单继承模型。我们一般使用runnable方式创建线程。</p>
+<p>使得Runnable作为一个单独的任务可以被多个线程共同执行，有利于实现并发。提高系统效率、</p>
+<p>这样解耦了runnable和Thread。同时提高了程序的灵活性</p>
+<p>Thread 类负责线程启动和属性设置等内容，权责分明。而runnable则专注于实现共享资源的操作。</p>
+<p>但是如果需要获取到线程的返回结果，那就需要使用Callable 的Future的方式创建线程了。</p>
+<h2 id="如何正确的停止一个线程">如何正确的停止一个线程</h2>
+<p>通常情况下我们是不需要手动停止一个线程的，而是待其运行完毕后自动结束。但是依然会有许多特殊的情况需要我们提前停止线程，比如：用户突然关闭程序，或程序运行出错重启等</p>
+<p>在这种情况下，即将停止的线程在很多业务场景下仍然很有价值。尤其是我们想写一个健壮性很好，能够安全应对各种场景的程序时，正确停止线程就显得格外重要。但是Java 并没有提供简单易用，能够直接安全停止线程的能力。</p>
+<p>对接线程而言。最正确的方式是使用Interrupt的方式停止线程。它不会立刻停止线程，而是给需要停止的线程发送一个中断信号通知，而需要被中断的线程是否选择中断。由其自己决定。它可以立即停止，也可以将手头工作做完在停止，这也符合java多线程的初衷。直接停止该线程可能会造成数据丢失。任务执行失败。</p>
+<p>实际上java希望线程直接可以相互协作。如果不了解对方的工作而冒然停止了对方。就可能会造成一些线程安全的问题，正确的方法是给对方留出收尾的时间让其对未完成的工作有个保存的机会。</p>
+<h2 id="如何用-interrupt-停止线程">如何用 interrupt 停止线程</h2>
+<pre><code>while (!Thread.currentThread().islnterrupted() &amp;&amp; more work to do) {
+		do more work
+}
+</code></pre>
+<p>一旦调用某个线程的 interrupt() 之后，这个线程的中断标记位就会被设置成 true。每个线程都有这样的标记位，当线程执行时，应该定期检查这个标记位，如果标记位被设置成 true，就说明有程序想终止该线程。回到源码，可以看到在 while 循环体判断语句中，首先通过 Thread.currentThread().isInterrupt() 判断线程是否被中断，随后检查是否还有工作要做。&amp;&amp; 逻辑表示只有当两个判断条件同时满足的情况下，才会去执行下面的工作。</p>
+<p>sleep，wait这些让线程阻塞进入休眠状态是，线程依然是可以相应中断的，假如进入休眠状态的线程无法相应中断，只能休眠结束后才能相应中断，这样的话就会导致相应中断不及时，可能带来严重的后果。</p>
+<h3 id="线程的六种状态">线程的六种状态</h3>
+<p>线程整个生命周期可以分为6不，从Thread.State中可以看出</p>
+<pre><code>public enum State {
+    /**
+     * Thread state for a thread which has not yet started.
+     */
+    NEW,
+
+    /**
+     * Thread state for a runnable thread.  A thread in the runnable
+     * state is executing in the Java virtual machine but it may
+     * be waiting for other resources from the operating system
+     * such as processor.
+     */
+    RUNNABLE,
+
+    /**
+     * Thread state for a thread blocked waiting for a monitor lock.
+     * A thread in the blocked state is waiting for a monitor lock
+     * to enter a synchronized block/method or
+     * reenter a synchronized block/method after calling
+     * {@link Object#wait() Object.wait}.
+     */
+    BLOCKED,
+
+    /**
+     * Thread state for a waiting thread.
+     * A thread is in the waiting state due to calling one of the
+     * following methods:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link Object#wait() Object.wait} with no timeout&lt;/li&gt;
+     *   &lt;li&gt;{@link #join() Thread.join} with no timeout&lt;/li&gt;
+     *   &lt;li&gt;{@link LockSupport#park() LockSupport.park}&lt;/li&gt;
+     * &lt;/ul&gt;
+     *
+     * &lt;p&gt;A thread in the waiting state is waiting for another thread to
+     * perform a particular action.
+     *
+     * For example, a thread that has called &lt;tt&gt;Object.wait()&lt;/tt&gt;
+     * on an object is waiting for another thread to call
+     * &lt;tt&gt;Object.notify()&lt;/tt&gt; or &lt;tt&gt;Object.notifyAll()&lt;/tt&gt; on
+     * that object. A thread that has called &lt;tt&gt;Thread.join()&lt;/tt&gt;
+     * is waiting for a specified thread to terminate.
+     */
+    WAITING,
+
+    /**
+     * Thread state for a waiting thread with a specified waiting time.
+     * A thread is in the timed waiting state due to calling one of
+     * the following methods with a specified positive waiting time:
+     * &lt;ul&gt;
+     *   &lt;li&gt;{@link #sleep Thread.sleep}&lt;/li&gt;
+     *   &lt;li&gt;{@link Object#wait(long) Object.wait} with timeout&lt;/li&gt;
+     *   &lt;li&gt;{@link #join(long) Thread.join} with timeout&lt;/li&gt;
+     *   &lt;li&gt;{@link LockSupport#parkNanos LockSupport.parkNanos}&lt;/li&gt;
+     *   &lt;li&gt;{@link LockSupport#parkUntil LockSupport.parkUntil}&lt;/li&gt;
+     * &lt;/ul&gt;
+     */
+    TIMED_WAITING,
+
+    /**
+     * Thread state for a terminated thread.
+     * The thread has completed execution.
+     */
+    TERMINATED;
+}
+</code></pre>
+<ol>
+<li>New 新建</li>
+<li>Runnable 运行态</li>
+<li>Blocked 阻塞装填</li>
+<li>Waiting 等待状态</li>
+<li>Timed_Waiting 等待超时</li>
+<li>Terminated 结束装填</li>
+</ol>
+<h3 id="new">new</h3>
+<p>当常见了Thread 对象后，该线程就进入了新建状态</p>
+<h3 id="runnable">Runnable</h3>
+<p>当调用了线程对象的start方法后，线程就进入了该状态，Runable 状态对应操作系统线程状态中的两种状态，分别是 Running 和 Ready</p>
+<p>此时线程已经被创建，被添加到等待队列中，等待系统给分配CPU资源。此时线程出入Ready就绪态。</p>
+<p>当线程获得CPU资源是，线程进入Running运行态。</p>
+<h3 id="blocked">Blocked</h3>
+<p>在 Java 中阻塞状态通常不仅仅是 Blocked，实际上它包括三种状态，分别是 Blocked(被阻塞）、Waiting(等待）、Timed Waiting(计时等待），这三 种状态统称为阻塞状态，</p>
+<h3 id="waiting">Waiting</h3>
+<p>线程进入 Waiting 状态有三种可能性。</p>
+<ol>
+<li>没有设置 Timeout 参数的 Object.wait() 方法。</li>
+<li>没有设置 Timeout 参数的 Thread.join() 方法。</li>
+<li>LockSupport.park() 方法。</li>
+</ol>
+<p>刚才强调过，Blocked 仅仅针对 synchronized monitor 锁，可是在 Java 中还有很多其他的锁，比如 ReentrantLock，如果线程在获取这种锁时没有抢到该锁就会进入 Waiting 状态，因为本质上它执行了 LockSupport.park() 方法，所以会进入 Waiting 状态。同样，Object.wait() 和 Thread.join() 也会让线程进入 Waiting 状态。</p>
+<p>Blocked 与 Waiting 的区别是 Blocked 在等待其他线程释放 monitor 锁，而 Waiting 则是在等待某个条件，比如 join 的线程执行完毕，或者是 notify()/notifyAll() 。</p>
+<h3 id="timed-waiting-限期等待">Timed Waiting 限期等待</h3>
+<p>以下情况会让线程进入 Timed Waiting 状态。</p>
+<ol>
+<li>设置了时间参数的 Thread.sleep(long millis) 方法；</li>
+<li>设置了时间参数的 Object.wait(long timeout) 方法；</li>
+<li>设置了时间参数的 Thread.join(long millis) 方法；</li>
+<li>设置了时间参数的 LockSupport.parkNanos(long nanos) 方法和 LockSupport.parkUntil(long deadline) 方法。</li>
+</ol>
+<p>想要从 Blocked 状态进入 Runnable 状态，要求线程获取 monitor 锁，而从 Waiting 状态流转到其他状态则比较特殊，因为首先 Waiting 是不限时的，也就是说无论过了多长时间它都不会主动恢复。</p>
+<p>只有当执行了 LockSupport.unpark()，或者 join 的线程运行结束，或者被中断时才可以进入 Runnable 状态。</p>
+<p>如果其他线程调用 notify() 或 notifyAll()来唤醒它，它会直接进入 Blocked 状态，这是为什么呢？因为唤醒 Waiting 线程的线程如果调用 notify() 或 notifyAll()，要求必须首先持有该 monitor 锁，所以处于 Waiting 状态的线程被唤醒时拿不到该锁，就会进入 Blocked 状态，直到执行了 notify()/notifyAll() 的唤醒它的线程执行完毕并释放 monitor 锁，才可能轮到它去抢夺这把锁，如果它能抢到，就会从 Blocked 状态回到 Runnable 状态。</p>
+<p>同样在 Timed Waiting 中执行 notify() 和 notifyAll() 也是一样的道理，它们会先进入 Blocked 状态，然后抢夺锁成功后，再回到 Runnable 状态。</p>
+<p>当然对于 Timed Waiting 而言，如果它的超时时间到了且能直接获取到锁/join的线程运行结束/被中断/调用了LockSupport.unpark()，会直接恢复到 Runnable 状态，而无需经历 Blocked 状态。</p>
+<h3 id="terminated">Terminated</h3>
+<p>Terminated 终止状态，要想进入这个状态有两种可能。</p>
+<ol>
+<li>run() 方法执行完毕，线程正常退出。</li>
+<li>出现一个没有捕获的异常，终止了 run() 方法，最终导致意外终止。</li>
+</ol>
+<p>最后我们再看线程转换的两个注意点。</p>
+<p>线程的状态是需要按照箭头方向来走的，比如线程从 New 状态是不可以直接进入 Blocked 状态的，它需要先经历 Runnable 状态。</p>
+<p>线程生命周期不可逆：一旦进入 Runnable 状态就不能回到 New 状态；一旦被终止就不可能再有任何状态的变化。所以一个线程只能有一次 New 和 Terminated 状态，只有处于中间状态才可以相互转换。</p>
+<p>也就是说线程可以再Runnable，Blocked,Waiting，TimedWaiting 状态之间转换</p>
+<p>处于Runnable 状态的线程无法获取到锁会进入到Blocked状态，处于Waiting 状态的线程获取锁后会进入到Runnable状态。</p>
+<h2 id="waitnotifynotifyall-方法的使用注意事项">wait/notify/notifyAll 方法的使用注意事项</h2>
+<p>有三个问题需要注意</p>
+<ol>
+<li>Q：为什么 wait 方法必须在 synchronized 保护的同步代码中使用？</li>
+<li>Q2：为什么 wait/notify/notifyAll 被定义在 Object 类中，而 sleep 定义在 Thread 类中？</li>
+<li>Q3：wait/notify 和 sleep 方法的异同？</li>
+</ol>
+<p>A1:</p>
+<p>A2:</p>
+<ol>
+<li>因为 Java 中每个对象都有一把称之为 monitor 监视器的锁，由于每个对象都可以上锁，这就要求在对象头中有一个用来保存锁信息的位置。这个锁是对象级别的，而非线程级别的，wait/notify/notifyAll 也都是锁级别的操作，它们的锁属于对象，所以把它们定义在 Object 类中是最合适，因为 Object 类是所有对象的父类。</li>
+<li>因为如果把 wait/notify/notifyAll 方法定义在 Thread 类中，会带来很大的局限性，比如一个线程可能持有多把锁，以便实现相互配合的复杂逻辑，假设此时 wait 方法定义在 Thread 类中，如何实现让一个线程持有多把锁呢？又如何明确线程等待的是哪把锁呢？既然我们是让当前线程去等待某个对象的锁，自然应该通过操作对象来实现，而不是操作线程。</li>
+</ol>
+<p>A3:</p>
+<p>相同点：</p>
+<ol>
+<li>wait/sleep都可以让线程进入到阻塞</li>
+<li>它们都可以响应中断，在等待或者休眠时如果收到中断信号，都会响应中断并抛出InterruptedException异常</li>
+</ol>
+<p>不同点：</p>
+<ol>
+<li>wait 方法必须在 synchronized 保护的代码中使用，而 sleep 方法并没有这个要求</li>
+<li>wait方法属于对象。它会让线程让出当前持有的对象锁，而sleep属于Thread的方法。不会让线程让出锁。</li>
+<li>sleep 方法中会要求必须定义一个时间，时间到期后会主动恢复，而对于没有参数的 wait 方法而言，意味着永久等待，直到被中断或被唤醒才能恢复，它并不会主动恢复</li>
+</ol>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Java 内存模型-Java memory model]]></title>
+        <id>https://philadelphia.github.io/post/java-nei-cun-mo-xing-java-memory-model</id>
+        <link href="https://philadelphia.github.io/post/java-nei-cun-mo-xing-java-memory-model">
+        </link>
+        <updated>2020-06-29T02:35:45.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="java内存模型">Java内存模型</h1>
+<p>Java 里面的内存模型和内存结构是很容易混淆的概念</p>
+<h2 id="java内存结构">java内存结构</h2>
+<p>java的内存结构指的是JVM虚拟机在运行时的一种内存划分机制。</p>
+<p>Java 代码是要运行在虚拟机上的，而虚拟机在执行 Java 程序的过程中会把所管理的内存划分为若干个不同的数据区域，这些区域都有各自的用途。在《Java 虚拟机规范（Java SE 8）》中描述了 JVM 运行时内存区域结构可分为以下 6 个区</p>
+<h3 id="堆区heap">堆区（Heap）</h3>
+<p>堆是存储类实例和数组的，通常是内存中最大的一块。实例很好理解，比如 new Object() 就会生成一个实例；而数组也是保存在堆上面的，因为在 Java 中，数组也是对象。</p>
+<h3 id="虚拟机栈java-virtual-machine-stacks">虚拟机栈（Java Virtual Machine Stacks）</h3>
+<p>它保存局部变量和部分结果，并在方法调用和返回中起作用。</p>
+<h3 id="方法区method-area">方法区（Method Area）</h3>
+<p>它存储每个类的结构，例如运行时的常量池、字段和方法数据，以及方法和构造函数的代码，包括用于类初始化以及接口初始化的特殊方法。</p>
+<h3 id="本地方法栈native-method-stacks">本地方法栈（Native Method Stacks）</h3>
+<p>与虚拟机栈基本类似，区别在于虚拟机栈为虚拟机执行的 Java 方法服务，而本地方法栈则是为 Native 方法服务。</p>
+<h3 id="程序计数器the-pc-register">程序计数器（The PC Register）</h3>
+<p>是最小的一块内存区域，它的作用通常是保存当前正在执行的 JVM 指令地址。</p>
+<h3 id="运行时常量池run-time-constant-pool">运行时常量池（Run-Time Constant Pool）</h3>
+<p>是方法区的一部分，包含多种常量，范围从编译时已知的数字到必须在运行时解析的方法和字段引用。</p>
+<p>注意，以上是 Java 虚拟机规范，不同的虚拟机实现会各有不同，一般会遵守规范。</p>
+<h2 id="java内存模型-2">java内存模型</h2>
+<p>java的内存模型和java的并发编程有关</p>
+<p>明白了java的内存模型，有利于我们写出线程安全的代码</p>
+<p>java 并发编程里有三个重要的概念</p>
+<ol>
+<li>有序性</li>
+<li>可见性</li>
+<li>原子性</li>
+</ol>
+<p>只要符合以上三个特性，我们这就这个程序是线程安全的。</p>
+<h3 id="有序性">有序性</h3>
+<p>即程序执行的顺序按照代码的先后顺序执行。</p>
+<p>我们知道java源代码在编译器编译后升级java字节码。java字节码在执行的时候会被翻译成具体平台的指令码。然后JVM把这些指令加载到内存执行。但是为了提高效率，JVM在执行时会动态的调整这些指令的加载顺序。但是这样可能会影响到线程的执行结果，在java中主要使用volatile来禁止执行重拍。另外可以通过synchronized和Lock来保证有序性，很显然，synchronized和Lock保证每个时刻是有一个线程执行同步代码，相当于是让线程顺序执行同步代码，自然就保证了有序性。</p>
+<p>另外，Java内存模型具备一些先天的“有序性”，即不需要通过任何手段就能够得到保证的有序性，这个通常也称为 happens-before 原则。如果两个操作的执行次序无法从happens-before原则推导出来，那么它们就不能保证它们的有序性，虚拟机可以随意地对它们进行重排序。</p>
+<h3 id="可见性">可见性</h3>
+<p>因为现在的CPU都是多核的。即使是单核的CPU，因为CPU的运算频率远远超过了内存的读写效率，很多时候CPU计算出的结果写入到内存都需要等待很长时间，为了提高CPU的工作效率，现代的CPU都提供了多级缓存的概念。CPU将结果写入到高速缓存后就接着工作了。这样大大提高了CPU的效率。也提高了系统的效率。然后系统再将结果写入到内存中。</p>
+<figure data-type="image" tabindex="1"><img src="https://philadelphia.github.io/post-images/1593398204543.png" alt=""></figure>
+<p>在图中，从下往上分别是内存，L3 缓存、L2 缓存、L1 缓存，寄存器，然后最上层是 CPU 的 4个核心。从内存，到 L3 缓存，再到 L2 和 L1 缓存，它们距离 CPU 的核心越来越近了，越靠近核心，其容量就越小，但是速度也越快。正是架由于缓存层的存在，才让我们的 CPU 能发挥出更好的性能。</p>
+<p>其实，线程间对于共享变量的可见性问题，并不是直接由多核引起的，而是由我们刚才讲到的这些 L3 缓存、L2 缓存、L1 缓存，也就是多级缓存引起的：每个核心在获取数据时，都会将数据从内存一层层往上读取，同样，后续对于数据的修改也是先写入到自己的 L1 缓存中，然后等待时机再逐层往下同步，直到最终刷回内存。</p>
+<h3 id="jmm的抽象主内存和工作内存">JMM的抽象：主内存和工作内存</h3>
+<p>什么是主内存和工作内存<br>
+Java 作为高级语言，屏蔽了 L1 缓存、L2 缓存、L3 缓存，也就是多层缓存的这些底层细节，用 JMM 定义了一套读写数据的规范。我们不再需要关心 L1 缓存、L2 缓存、L3 缓存等多层缓存的问题，我们只需要关心 JMM 抽象出来的主内存和工作内存的概念。为了更方便你去理解，可参考下图：<br>
+<img src="https://philadelphia.github.io/post-images/1593398249432.png" alt=""></p>
+<p>每个线程只能够直接接触到工作内存，无法直接操作主内存，而工作内存中所保存的正是主内存的共享变量的副本，主内存和工作内存之间的通信是由 JMM 控制的</p>
+<h3 id="主内存和工作内存的关系">主内存和工作内存的关系</h3>
+<p>JMM 有以下规定：</p>
+<p>（1）所有的变量都存储在主内存中，同时每个线程拥有自己独立的工作内存，而工作内存中的变量的内容是主内存中该变量的拷贝；</p>
+<p>（2）线程不能直接读 / 写主内存中的变量，但可以操作自己工作内存中的变量，然后再同步到主内存中，这样，其他线程就可以看到本次修改；</p>
+<p>（3） 主内存是由多个线程所共享的，但线程间不共享各自的工作内存，如果线程间需要通信，则必须借助主内存中转来完成。</p>
+<p>听到这里，你对上图的理解可能会更深刻一些，从图中可以看出，每个工作内存中的变量都是对主内存变量的一个拷贝，相当于是一个副本。而且图中没有一条线是可以直接连接各个工作内存的，因为工作内存之间的通信，都需要通过主内存来中转。</p>
+<p>所以一个线程对自己工作内存中变量的写入操作是不会即使告知其他线程的。这时如果其他线程也访问了改变量，就有可能引起并发问题。造成数据失真，为了解决这个问题java提出了volatile关键字。使用volatile关键字修饰的变量。在多个线程访问该类型的变量时，当有一个线程修改了该变量的值时，CPU会立刻将该变量的值写入到主内存中，并告知各CPU这个变量的缓存已经失效。其他线程需要使用改变量时就需要从主内存中重新读取。</p>
+<h3 id="原子性">原子性</h3>
+<p>原子性：即一个操作或者多个操作 要么全部执行并且执行的过程不会被任何因素打断，要么就都不执行，数据库的事务就是原子性，要么全部成功，要不全部失败，不会一部分成功，一部分失败。</p>
+<p>在java中自增自减运算都不是原子操作，所以在并发编程中需要采取额外措施来保证操作的原子性。java的关键字volatile无法保证原子性，它只能保证一致性和可见性。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Java线程池]]></title>
         <id>https://philadelphia.github.io/post/java-xian-cheng-chi</id>
@@ -855,837 +1322,6 @@ private boolean isEvenNumber(int num) {
 </code></pre>
 <p>137:https://leetcode-cn.com/problems/single-number-ii/</p>
 <p>给定一个<strong>非空</strong>整数数组，除了某个元素只出现一次以外，其余每个元素均出现了三次。找出那个只出现了一次的元素。</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[推送]]></title>
-        <id>https://philadelphia.github.io/post/tui-song</id>
-        <link href="https://philadelphia.github.io/post/tui-song">
-        </link>
-        <updated>2019-08-30T06:26:20.000Z</updated>
-        <content type="html"><![CDATA[<p>随着移动互联网和移动操作系统的发展，移动设备的功能也越来越丰富，客户端和服务端的交互越来越方便。我们可以及时收到服务的发送的信息，及时作出回应，这背后就设计到推送技术。</p>
-<h1 id="传统的推送方案">传统的推送方案：</h1>
-<ol>
-<li>轮询：客户端定期发送Http请求（短连接）。优点：获取更新及时，缺点是浪费带宽，设备电量。(因为HTTP1.0是短连接类型，每次通话结束后就断开连接)</li>
-<li>SMS服务，当服务端有推送的需求时，会向所有的客户端发送短信，缺点是  贵，小公司玩不起</li>
-<li>长连接，就是连接接后，通信结束后，不断来连接，后续的通信依旧使用该连接，<br>
-短连接和长连接的区别见下图：<br>
-<img src="https://philadelphia.github.io/post-images/1567148424079.png" alt=""></li>
-</ol>
-<p>但是长连接也有断开的可能,三种原因会导致长连接的断开</p>
-<ol>
-<li>NAT超时：因为IP地址的数量有限，很多时候的我们的通信都是使用NAT来完成，但是NAT会定期刷新NAT映射表，会将没有数据通信的连接断开。</li>
-<li>DHCP租约过期：一般而言，PC端或手机终端获取IP地址的方式大多是动态获取，即通过DHCP协议从DHCP服务器(一般由路由器同时兼任)获取。目前测试发现安卓系统对DHCP的处理有Bug， DHCP租期到了不会主动续约并且会继续使用过期IP，这个问题会造成TCP长连接偶然的断连。</li>
-<li>网络状态改变：手机网络和WIFI网络切换， 网络断开和连上等情况， 也会使长连接断开。 这里原因可能比较多， 但结果无非就是IP变了， 或者被系统通知连接断了。</li>
-</ol>
-<p>针对2，3照成的长连接断开，我们在连接断开后重新发起连接来解决。<br>
-针对NAT照成的长连接断开，我们需要定期的发送心跳包来避免NAT失效。</p>
-<p>心跳包不是长连接所必需的的，因为TCP连接默认就是长连接的。<br>
-在长连接里使用心跳包有两个作用：1：避免NAT失效；2：检测长连接是否有效<br>
-因为2，3造成的连接断开是不会通知客户端的，客户端只有发起连接，遇到写超时时才知道连接断开了。</p>
-<h1 id="心跳包的发送频率问题">心跳包的发送频率问题：</h1>
-<p>心跳包一定要小于NAT的刷新频率，这样才能避免连接被当做失效连接而关闭<br>
-如果心跳包发送太频繁，除了浪费流量和电量之外，没有其他意义<br>
-如果频率太慢了，可能导致NAT失效<br>
-为了维持长连接，需要CPU定时发送心跳包。<br>
-如果使用Timer定时器就会导致阻碍CPU进入休眠状态，很宽就会耗尽设备的电量<br>
-在Android系统上推荐使用AlarmManager，AlarmManager 是系统封装的一个RTC的管理工具，RTC(Real Time Clock)是一个独立的硬件时钟，可以在CPU休眠时正常运行，在预设的时间到达时，通过中断唤醒 CPU。</p>
-<h1 id="心跳包和轮询的区别">心跳包和轮询的区别</h1>
-<p>心跳包和轮询看起来类似， 都是客户端主动联系服务器， 但是区别很大。</p>
-<p>轮询是为了获取数据， 而心跳是为了保活TCP连接；<br>
-轮询得越频繁， 获取数据就越及时，心跳的频繁与否和数据是否及时没有直接关系；<br>
-轮询比心跳能耗更高， 因为一次轮询需要经过TCP三次握手， 四次挥手， 单次心跳不需要建立和拆除TCP连接。</p>
-<h1 id="长连接是如何唤醒设备的">长连接是如何唤醒设备的：</h1>
-<p>在设备休眠的时候是依然可以接受到推送的。如果服务器想客户端推送了信息，那么休眠状态下的设备是如何响应的呢，设备已经休眠了啊，要回答这个问题就需要对手机的硬件架构有一定的了解了。<br>
-现在的移动设备的处理器一般包括两部分，一部分是AP(Application Processor)<br>
-一部分是BP(BaseBand Processor)<br>
-AP是用来运行操作系统和应用程序的<br>
-BP是用来运行实时操作系统(RTOS)，通讯协议栈运行于BP的RTOS之上<br>
-非通话时间，BP的能耗基本上在5mA左右，而AP只要处于非休眠状态，能耗至少在50mA以上，执行图形运算时会更高。另外LCD工作时功耗在100mA左右，WIFI也在100mA左右。一般手机待机时，AP，LCD，WIFI均进入休眠状态，这时Android中应用程序的代码也会停止执行。</p>
-<p>当设备收到数据包时，BP会唤醒AP，这样CPU接下来就会收到服务器发来的推送，然后就可以进行处理了。<br>
-1:<a href="https://cstsinghua.github.io/2016/06/08/%E6%8E%A8%E9%80%81%E6%96%B9%E6%A1%88/">https://cstsinghua.github.io/2016/06/08/%E6%8E%A8%E9%80%81%E6%96%B9%E6%A1%88/</a><br>
-2:<a href="http://www.52im.net/thread-341-1-1.html">http://www.52im.net/thread-341-1-1.html</a></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[RxJava 1.0]]></title>
-        <id>https://philadelphia.github.io/post/rxjava-10</id>
-        <link href="https://philadelphia.github.io/post/rxjava-10">
-        </link>
-        <updated>2019-08-16T10:07:47.000Z</updated>
-        <content type="html"><![CDATA[<h2 id="function">Function</h2>
-<p>Function 是Action和Func的父接口。</p>
-<pre><code>/**
- * All Func and Action interfaces extend from this.
- * &lt;p&gt;
- * Marker interface to allow instanceof checks.
- */
-public interface Function {
-
-}
-</code></pre>
-<h2 id="action">Action</h2>
-<pre><code>/**
- * All Action interfaces extend from this.
- * &lt;p&gt;
- * Marker interface to allow instanceof checks.
- */
-public interface Action extends Function {
-
-}
-</code></pre>
-<p>Action0 是 RxJava 的一个接口，它只有一个方法 call()，这个方法是无参无返回值的；</p>
-<p>Action 接口有以下子接口，<br>
-Action1,Action2------Action9,ActionN</p>
-<pre><code>public interface Action1&lt;T&gt; extends Action {
-	void call(T t);
-}
-
-public interface Action2&lt;T1, T2&gt; extends Action {
-	void call(T1 t1, T2 t2);
-}
-
-public interface ActionN extends Action {
-	void call(Object... args);
-}
-</code></pre>
-<h2 id="func">Func</h2>
-<pre><code>Func接口几次Function接口和Callable接口，并复写Callable接口的call方法。
-Func0接口没有参数，只有返回值，
-Func1有一个参数，
-Func2有两个参数。
-.
-.
-.
-Func9有9个参数，
-以此类推，FuncN有N个参数
-
-
-/**
- * Represents a function with zero arguments.
- */
-public interface Func0&lt;R&gt; extends Function, Callable&lt;R&gt; {
-	@Override
-	R call();
-}
-
-/**
- * Represents a function with one argument.
- */
-public interface Func1&lt;T, R&gt; extends Function {
-	R call(T t);
-}
-
-/**
- * A vector-argument action.
- */
-public interface Func9&lt;T1, T2, T3, T4, T5, T6, T7, T8, T9, R&gt; extends Function {
-	R call(T1 t1, T2 t2, T3 t3, T4 t4, T5 t5, T6 t6, T7 t7, T8 t8, T9 t9);
-}
-</code></pre>
-<p>在创建Observable以后，我们可以通过Observable.subscribe(final Action1&lt;? super T&gt; onNext, final Action1<Throwable> onError, final Action0 onCompleted)</p>
-<p>如果我们只传递onNext，onError和onComplete会使用系统默认的。</p>
-<pre><code>public final Subscription subscribe(final Action1&lt;? super T&gt; onNext) {
-    if (onNext == null) {
-        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
-    }
-
-    Action1&lt;Throwable&gt; onError = InternalObservableUtils.ERROR_NOT_IMPLEMENTED;
-    Action0 onCompleted = Actions.empty();
-    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
-}
-
- public final Subscription subscribe(final Action1&lt;? super T&gt; onNext, final Action1&lt;Throwable&gt; onError) {
-    if (onNext == null) {
-        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
-    }
-    if (onError == null) {
-        throw new IllegalArgumentException(&quot;onError can not be null&quot;);
-    }
-
-    Action0 onCompleted = Actions.empty();
-    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
-}
-
-public final Subscription subscribe(final Action1&lt;? super T&gt; onNext, final Action1&lt;Throwable&gt; onError, final Action0 onCompleted) {
-    if (onNext == null) {
-        throw new IllegalArgumentException(&quot;onNext can not be null&quot;);
-    }
-    if (onError == null) {
-        throw new IllegalArgumentException(&quot;onError can not be null&quot;);
-    }
-    if (onCompleted == null) {
-        throw new IllegalArgumentException(&quot;onComplete can not be null&quot;);
-    }
-
-    return subscribe(new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted));
-}
-</code></pre>
-<p>最终系统会将onNext,onError，onComplete，组合成一个ActionSubscriber，</p>
-<pre><code>new ActionSubscriber&lt;T&gt;(onNext, onError, onCompleted)
-/**
- * A Subscriber that forwards the onXXX method calls to callbacks.
- * @param &lt;T&gt; the value type
- */
-	public final class ActionSubscriber&lt;T&gt; extends Subscriber&lt;T&gt; {
-
-    final Action1&lt;? super T&gt; onNext;
-    final Action1&lt;Throwable&gt; onError;
-    final Action0 onCompleted;
-
-    public ActionSubscriber(Action1&lt;? super T&gt; onNext, Action1&lt;Throwable&gt; onError, Action0 onCompleted) {
-        this.onNext = onNext;
-        this.onError = onError;
-        this.onCompleted = onCompleted;
-    }
-
-    @Override
-    public void onNext(T t) {
-        onNext.call(t);
-    }
-
-    @Override
-    public void onError(Throwable e) {
-        onError.call(e);
-    }
-
-    @Override
-    public void onCompleted() {
-        onCompleted.call();
-    }
-}
-</code></pre>
-<h2 id="observer">Observer</h2>
-<pre><code>public interface Observer&lt;T&gt; {
-	void onCompleted();
-
-	void onError(Throwable e);
-
-	void onNext(T t);
-</code></pre>
-<p>}</p>
-<h2 id="subscriber">Subscriber</h2>
-<p>Subscriber实现了Subscription接口，复写了其<code>unsubscribe</code>和<code>isUnsubscribed</code>方法。<br>
-在<code>Observer</code>的基础上增加了<code>onStart</code>，<code>request</code>，<code>addToRequested</code>，<code>setProducer</code>方法。</p>
-<pre><code>public abstract class Subscriber&lt;T&gt; implements Observer&lt;T&gt;, Subscription{
-
-    // represents requested not set yet
-    private static final Long NOT_SET = Long.MIN_VALUE;
-
-    private final SubscriptionList subscriptions;
-    private final Subscriber&lt;?&gt; subscriber;
-    /* protected by `this` */
-    private Producer producer;
-    /* protected by `this` */
-    private long requested = NOT_SET; // default to not set
-
-    protected Subscriber() {
-        this(null, false);
-    }
-
-
-    protected Subscriber(Subscriber&lt;?&gt; subscriber) {
-        this(subscriber, true);
-    }
-
-   
-    protected Subscriber(Subscriber&lt;?&gt; subscriber, boolean shareSubscriptions) {
-        this.subscriber = subscriber;
-        this.subscriptions = shareSubscriptions &amp;&amp; subscriber != null ? subscriber.subscriptions : new SubscriptionList();
-    }
-
-
-    public final void add(Subscription s) {
-        subscriptions.add(s);
-    }
-
-    @Override
-    public final void unsubscribe() {
-        subscriptions.unsubscribe();
-    }
-
-
-    @Override
-    public final boolean isUnsubscribed() {
-        return subscriptions.isUnsubscribed();
-    }
-
-    
-    public void onStart() {
-        // do nothing by default
-    }
-    
-    
-    protected final void request(long n) {
-        if (n &lt; 0) {
-            throw new IllegalArgumentException(&quot;number requested cannot be negative: &quot; + n);
-        } 
-        
-        // if producer is set then we will request from it
-        // otherwise we increase the requested count by n
-        Producer producerToRequestFrom = null;
-        synchronized (this) {
-            if (producer != null) {
-                producerToRequestFrom = producer;
-            } else {
-                addToRequested(n);
-                return;
-            }
-        }
-        // after releasing lock (we should not make requests holding a lock)
-        producerToRequestFrom.request(n);
-    }
-
-    private void addToRequested(long n) {
-        if (requested == NOT_SET) {
-            requested = n;
-        } else { 
-            final long total = requested + n;
-            // check if overflow occurred
-            if (total &lt; 0) {
-                requested = Long.MAX_VALUE;
-            } else {
-                requested = total;
-            }
-        }
-    }
-    
-  
-    public void setProducer(Producer p) {
-        long toRequest;
-        boolean passToSubscriber = false;
-        synchronized (this) {
-            toRequest = requested;
-            producer = p;
-            if (subscriber != null) {
-                // middle operator ... we pass through unless a request has been made
-                if (toRequest == NOT_SET) {
-                    // we pass through to the next producer as nothing has been requested
-                    passToSubscriber = true;
-                }
-            }
-        }
-        // do after releasing lock
-        if (passToSubscriber) {
-            subscriber.setProducer(producer);
-        } else {
-            // we execute the request with whatever has been requested (or Long.MAX_VALUE)
-            if (toRequest == NOT_SET) {
-                producer.request(Long.MAX_VALUE);
-            } else {
-                producer.request(toRequest);
-            }
-        }
-    }
-}
-</code></pre>
-<h2 id="observable-与observer建立绑定关系">Observable 与Observer建立绑定关系</h2>
-<p>Observable.create().subscribe(new Observer)</p>
-<pre><code>  public final Subscription subscribe(final Observer&lt;? super T&gt; observer) {
-        if (observer instanceof Subscriber) {
-            return subscribe((Subscriber&lt;? super T&gt;)observer);
-        }
-        return subscribe(new ObserverSubscriber&lt;T&gt;(observer));
-    }
-</code></pre>
-<p>如果传入的直接是一个Subscriber对象的话，直接调用subscribe（Subscriber observer）<br>
-否则调用subsribe(new ObserverSubscriber<T>(observer)),将observer构造成一个ObserverSubscriber对象传入。<br>
-其实两者都是一样的。因为<code>ObserverSubscriber</code> 也是<code>Subscriber</code>的子类。</p>
-<h2 id="observersubscriber">ObserverSubscriber</h2>
-<pre><code>	/**
-	 * Wraps an Observer and forwards the onXXX method calls to it.
-	 * @param &lt;T&gt; the value type
-	 */
-	public final class ObserverSubscriber&lt;T&gt; extends Subscriber&lt;T&gt; {
-    final Observer&lt;? super T&gt; observer;
-
-    public ObserverSubscriber(Observer&lt;? super T&gt; observer) {
-        this.observer = observer;
-    }
-    
-    @Override
-    public void onNext(T t) {
-        observer.onNext(t);
-    }
-    
-    @Override
-    public void onError(Throwable e) {
-        observer.onError(e);
-    }
-    
-    @Override
-    public void onCompleted() {
-        observer.onCompleted();
-    }
-}
-</code></pre>
-<p>该类包裹了一个Observer对象。所有的实现其实是Observer对象来操作的。</p>
-<pre><code>	 public final Subscription subscribe(Subscriber&lt;? super T&gt; subscriber) {
-	        return Observable.subscribe(subscriber, this);
-	    }
-
-
-
-    static &lt;T&gt; Subscription subscribe(Subscriber&lt;? super T&gt; subscriber, Observable&lt;T&gt; observable) {
-     // validate and proceed
-        if (subscriber == null) {
-            throw new IllegalArgumentException(&quot;observer can not be null&quot;);
-        }
-        if (observable.onSubscribe == null) {
-            throw new IllegalStateException(&quot;onSubscribe function can not be null.&quot;);
-            /*
-             * the subscribe function can also be overridden but generally that's not the appropriate approach
-             * so I won't mention that in the exception
-             */
-        }
-        
-        // new Subscriber so onStart it
-		先调用subscriber的onStart方法。
-        subscriber.onStart();
-        
-        /*
-         * See https://github.com/ReactiveX/RxJava/issues/216 for discussion on &quot;Guideline 6.4: Protect calls
-         * to user code from within an Observer&quot;
-         */
-        // if not already wrapped
-        if (!(subscriber instanceof SafeSubscriber)) {
-            // assign to `observer` so we return the protected version
-            subscriber = new SafeSubscriber&lt;T&gt;(subscriber);
-        }
-
-        // The code below is exactly the same an unsafeSubscribe but not used because it would 
-        // add a significant depth to already huge call stacks.
-        try {
-            // allow the hook to intercept and/or decorate
-            hook.onSubscribeStart(observable, observable.onSubscribe).call(subscriber);
-            return hook.onSubscribeReturn(subscriber);
-        } catch (Throwable e) {
-            // special handling for certain Throwable/Error/Exception types
-            Exceptions.throwIfFatal(e);
-            // in case the subscriber can't listen to exceptions anymore
-            if (subscriber.isUnsubscribed()) {
-                RxJavaPluginUtils.handleException(hook.onSubscribeError(e));
-            } else {
-                // if an unhandled error occurs executing the onSubscribe we will propagate it
-                try {
-                    subscriber.onError(hook.onSubscribeError(e));
-                } catch (Throwable e2) {
-                    Exceptions.throwIfFatal(e2);
-                    // if this happens it means the onError itself failed (perhaps an invalid function implementation)
-                    // so we are unable to propagate the error correctly and will just throw
-                    RuntimeException r = new OnErrorFailedException(&quot;Error occurred attempting to subscribe [&quot; + e.getMessage() + &quot;] and then again while trying to pass to onError.&quot;, e2);
-                    // TODO could the hook be the cause of the error in the on error handling.
-                    hook.onSubscribeError(r);
-                    // TODO why aren't we throwing the hook's return value.
-                    throw r;
-                }
-            }
-            return Subscriptions.unsubscribed();
-        }
-    }
-</code></pre>
-<p>该方法返回一个<code>Subscription</code>对象</p>
-<h2 id="subscription">Subscription</h2>
-<pre><code>	public interface Subscription {
-
-    /**
-     * Stops the receipt of notifications on the {@link Subscriber} that was registered when this Subscription
-     * was received.
-     * &lt;p&gt;
-     * This allows unregistering an {@link Subscriber} before it has finished receiving all events (i.e. before
-     * onCompleted is called).
-     */
-    void unsubscribe();
-
-    /**
-     * Indicates whether this {@code Subscription} is currently unsubscribed.
-     *
-     * @return {@code true} if this {@code Subscription} is currently unsubscribed, {@code false} otherwise
-     */
-    boolean isUnsubscribed();
-
-}
-</code></pre>
-<p>该接口有两个方法。</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Retrofit2.0简介]]></title>
-        <id>https://philadelphia.github.io/post/retrofit20-jian-jie</id>
-        <link href="https://philadelphia.github.io/post/retrofit20-jian-jie">
-        </link>
-        <updated>2019-08-16T10:07:18.000Z</updated>
-        <content type="html"><![CDATA[<h2 id="1定义">1.定义</h2>
-<p>官方的Retrofit主页是这样描述它的</p>
-<blockquote>
-<p>A type-safe HTTP client for Android and Java</p>
-</blockquote>
-<blockquote>
-<p>用于Android和Java的一个类型安全(type-safe)的REST客户端</p>
-</blockquote>
-<p>你可以使用注解去描述HTTP请求，同时Retrofit默认集成URL参数替换和查询参数.除此之外它还支持 Multipart请求和文件上传。</p>
-<h2 id="2使用">2.使用</h2>
-<p>注意这个任务是网络任务，不要忘记给程序加入网络权限</p>
-<pre><code>&lt;uses-permission android:name=&quot;android.permission.INTERNET&quot; /&gt;
-</code></pre>
-<p>build.gradle</p>
-<pre><code>dependencies { 
- // Retrofit &amp;amp; OkHttp
-compile 'com.squareup.retrofit:retrofit:2.0.0-beta2'
-}
-</code></pre>
-<p><code>Retrofit</code> 需要最低<code>JDK 1.7</code> 和 <code>Android 2.3</code>.</p>
-<p>retfofit 使用注解的方式定义API</p>
-<p>方法类型有：</p>
-<blockquote>
-<p>GET, POST, PUT, DELETE, HEAD</p>
-</blockquote>
-<p>1	声明API</p>
-<pre><code>public interface GitHubService {
-  @GET(&quot;users/{user}/repos&quot;)
-  Call&lt;List&lt;Repo&gt;&gt; listRepos(@Path(&quot;user&quot;) String user);
-}
-</code></pre>
-<p>2	初始化Retrofit</p>
-<pre><code>Retrofit retrofit = new Retrofit.Builder()
-.baseUrl(&quot;https://api.github.com/&quot;)
-.build();
-
-GitHubService service = retrofit.create(GitHubService.class);
-Call&lt;List&lt;Repo&gt;&gt; repos = service.listRepos(&quot;octocat&quot;);    
-</code></pre>
-<p>3	发起请求：</p>
-<p>//同步请求</p>
-<pre><code>try {
-  Response&lt;List&lt;Repo&gt;&gt; bodyResponse = call.execute();
-  String body = bodyResponse.body().string();//获取返回体的字符串
-  Log.i(&quot;wxl&quot;, &quot;body=&quot; + body);
-  } catch (IOException e) {
-  e.printStackTrace();
-  }
-</code></pre>
-<p>//异步请求</p>
-<pre><code>call.enqueue(new Callback&lt;List&lt;Repo&gt;&gt;() {
-            @Override
-            public void onResponse(Response&lt;List&lt;Repo&gt;&gt; response) {
-                try {
-                    Log.i(&quot;wxl&quot;, &quot;response=&quot; + response.body().string());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            @Override
-            public void onFailure(Throwable t) {
-                Log.i(&quot;wxl&quot;, &quot;onFailure=&quot; + t.getMessage());
-            }
-        });
-</code></pre>
-<p>4 取消请求</p>
-<pre><code>call.cancel();
-</code></pre>
-<p>所有的请求方法都是按照上述类型执行。<br>
-在方法声明时注解@GET，@POST,@PUT 分别对应方法的类型。</p>
-<p>接口参数</p>
-<blockquote>
-<p>Path</p>
-</blockquote>
-<p>ApiStores</p>
-<pre><code> /**
- * Call&lt;T&gt; get();必须是这种形式,这是2.0之后的新形式
- * 如果不需要转换成Json数据,可以用了ResponseBody;
- * 你也可以使用Call&lt;GsonBean&gt; get();这样的话,需要添加Gson转换器
- */
-public interface ApiStores {
-    @GET(&quot;adat/sk/{cityId}.html&quot;)
-    Call&lt;ResponseBody&gt; getWeather(@Path(&quot;cityId&quot;) String cityId);
-}
-</code></pre>
-<blockquote>
-<p>Query</p>
-</blockquote>
-<p>如果链接是http://ip.taobao.com/service/getIpInfo.php?ip=202.202.33.33</p>
-<p>ApiStores</p>
-<pre><code>public interface ApiStores {
-	@GET(&quot;http://ip.taobao.com/service/getIpInfo.php&quot;)
-	Call&lt;ResponseBody&gt; getWeather(@Query(&quot;ip&quot;) String ip);
-</code></pre>
-<p>复杂的查询参数也可以使用Map。</p>
-<pre><code>@GET(&quot;group/{id}/users&quot;)
-Call&lt;List&lt;User&gt;&gt; groupList(@Path(&quot;id&quot;) int groupId, @QueryMap Map&lt;String, String&gt; options);
-</code></pre>
-<blockquote>
-<p>Headers</p>
-</blockquote>
-<p>你可以通过@Headers参数来设置静态headers</p>
-<pre><code>@Headers(&quot;Cache-Control: max-age=640000&quot;)
-@GET(&quot;widget/list&quot;)
-Call&lt;List&lt;Widget&gt;&gt; widgetList();
-
-@Headers({
-    &quot;Accept: application/vnd.github.v3.full+json&quot;,
-    &quot;User-Agent: Retrofit-Sample-App&quot;
-})
-@GET(&quot;users/{username}&quot;)
-Call&lt;User&gt; getUser(@Path(&quot;username&quot;) String username);
-</code></pre>
-<p><code>Headers</code>不复写其他的<code>Headers</code>值。所有同名的的<code>Headers</code>参数都将包含在该请求中。<br>
-Request的Header可以通过使用<code>@Header</code>注解动态更新。必须给<code>@Header</code>提供一个相应的参数。如果该值为空，该<code>Header</code>就被忽略了。不然就会调用value的<code>toString()</code>方法获得value的值。</p>
-<pre><code>@GET(&quot;user&quot;)
-Call&lt;User&gt; getUser(@Header(&quot;Authorization&quot;) String authorization)
-</code></pre>
-<p>每一个request都有的header可以通过设置<code>OkHttp interceptor</code>来统一添加。</p>
-<blockquote>
-<p>Body</p>
-</blockquote>
-<p>这是针对POST方式，如果参数是json格式，如：</p>
-<pre><code>{		
-    &quot;apiInfo&quot;: {		
-        &quot;apiName&quot;: &quot;WuXiaolong&quot;,		
-        &quot;apiKey&quot;: &quot;666&quot;		
-    }		
-}
-</code></pre>
-<p>ApiStores</p>
-<pre><code>public interface ApiStores {
-    @POST(&quot;client/shipper/getCarType&quot;)
-    Call&lt;ResponseBody&gt; getCarType(@Body ApiInfo apiInfo);
-   }
-</code></pre>
-<p>这个<code>Object</code>将被<code>Retrofit</code>对象所指定的<code>Converter</code>所转换，如果没有指定转换器，只能使用<code>RequestBody</code>来定义参数。</p>
-<p>建立Bean</p>
-<pre><code>public class ApiInfo {
-       private ApiInfoBean apiInfo;
-       public ApiInfoBean getApiInfo() {
-           return apiInfo;
-       }
-       public void setApiInfo(ApiInfoBean apiInfo) {
-           this.apiInfo = apiInfo;
-       }
-       public class ApiInfoBean {
-           private String apiName;
-           private String apiKey;
-           //省略get和set方法
-       }
-   }
-</code></pre>
-<p>代码调用</p>
-<pre><code>private void getCarType() {
-   mRetrofit = new Retrofit.Builder()
-           .baseUrl(&quot;http://WuXiaolong.me/&quot;)
-           .addConverterFactory(GsonConverterFactory.create())
-           .build();
-   ApiStores apiStores = mRetrofit.create(ApiStores.class);
-   ApiInfo apiInfo = new ApiInfo();
-   ApiInfo.ApiInfoBean apiInfoBean = apiInfo.new ApiInfoBean();
-   apiInfoBean.setApiKey(&quot;666&quot;);
-   apiInfoBean.setApiName(&quot;WuXiaolong&quot;);
-   apiInfo.setApiInfo(apiInfoBean);
-   Call&lt;ResponseBody&gt; call = apiStores.getCarType(apiInfo);
-   call.enqueue(new Callback&lt;ResponseBody&gt;() {
-       @Override
-       public void onResponse(Response&lt;ResponseBody&gt; response) {
-           String body = null;//获取返回体的字符串
-           try {
-               body = response.body().string();
-           } catch (IOException e) {
-               e.printStackTrace();
-           }
-           Log.i(&quot;wxl&quot;, &quot;get=&quot; + body);
-       }
-       @Override
-       public void onFailure( Throwable t) {
-       }
-   });
-   }
-</code></pre>
-<blockquote>
-<p>Url encode</p>
-</blockquote>
-<p>POST or PUT Url encode 過的表單資料，用@FormUrlEncoded，使用@Field個別指定</p>
-<pre><code>@POST(&quot;/articles/{article_id}/comments&quot;)
-@FormUrlEncoded
-Comment create(
-@Path(&quot;article_id&quot;) int articleId,
-@Field(&quot;rating&quot;) int rating,
-@Field(&quot;content&quot;) String content
-);
-</code></pre>
-<p>POST or PUT Url encode 過的表單資料，用@FormUrlEncoded，參數也可用@Body傳</p>
-<pre><code>@POST(&quot;/articles/{article_id}/comments&quot;)
-@FormUrlEncoded
-Comment create(
-    @Path(&quot;article_id&quot;) int articleId,
-    @Body Comment comment
-);
-</code></pre>
-<blockquote>
-<p>POST or PUT 用@Multipart來上傳檔案</p>
-</blockquote>
-<pre><code>@PUT(&quot;/me&quot;)
-@Multipart
-Me update(
-    @Part(&quot;display_name&quot;) String displayName,
-    @Part(&quot;avatar&quot;) TypedFile avatar
-);
-</code></pre>
-<p>更详细的信息，请点击：<a href="http://www.chenkaihua.com/2016/04/02/retrofit2-upload-multipart-files/">http://www.chenkaihua.com/2016/04/02/retrofit2-upload-multipart-files/</a></p>
-<p>更多更有效的 Converters</p>
-<blockquote>
-<p>默认情况下，<code>Retrofit</code> 只能反序列化<code>HTTP</code> body到<code>OKHTTP</code>的<code>ResponseBody</code>类型。并且<code>OKHTTP</code>只接受<code>Retrifit</code> <code>@Body</code>类型的<code>RequestBody</code><br>
-可以添加<code>Converter</code>转换器来支持其他的类型，6个相似的兼容流行的序列化库模块可以供使用。</p>
-</blockquote>
-<pre><code>Gson: com.squareup.retrofit2:converter-gson
-Jackson: com.squareup.retrofit2:converter-jackson	
-Moshi: com.squareup.retrofit2:converter-moshi
-Protobuf: com.squareup.retrofit2:converter-protobuf
-Wire: com.squareup.retrofit2:converter-wire
-Simple XML: com.squareup.retrofit2:converter-simplexml	
-Scalars (primitives, boxed, and String): com.squareup.retrofit2:converter-scalars
-</code></pre>
-<p>例子:</p>
-<pre><code>interface which uses Gson for its deserialization.
-
-Retrofit retrofit = new Retrofit.Builder()
-    .baseUrl(&quot;https://api.github.com&quot;)
-    .addConverterFactory(GsonConverterFactory.create())
-    .build();
-
-GitHubService service = retrofit.create(GitHubService.class);
-</code></pre>
-<blockquote>
-<p>Retrofit 1 里有一个 converter 的问题。多数人可能没遇到过，是库内部的一个问题。在 Retrofit 2 里，已经解决了这个问题，同时开始支持多种 Converter 并存。</p>
-</blockquote>
-<blockquote>
-<p>在之前，如果你遇到这种情况：一个 API 请求返回的结果需要通过 JSON 反序列化，另一个 API 请求需要通过 proto 反序列化，唯一的解决方&gt;案就是将两个接口分离开声明。</p>
-</blockquote>
-<pre><code>interface SomeProtoService {
-  @GET(&quot;/some/proto/endpoint&quot;)
-  Call&lt;SomeProtoResponse&gt; someProtoEndpoint();
-}
-
-interface SomeJsonService {
-  @GET(&quot;/some/json/endpoint&quot;)
-  Call&lt;SomeJsonResponse&gt; someJsonEndpoint();
-</code></pre>
-<blockquote>
-<p>之所以搞得这么麻烦是因为一个 REST adapter 只能绑定一个 Converter 对象。我们费工夫去解决这个是因为：接口的声明是要语意化的。API 接口应该通过功能实现分组，比如： account 的接口，user 的接口，或者 Twitter 相关的接口。返回格式的差异不应该成为你分组时候的阻碍。</p>
-</blockquote>
-<blockquote>
-<p>现在，你可以把他们都放在一起了：</p>
-</blockquote>
-<pre><code>interface SomeService {
-  @GET(&quot;/some/proto/endpoint&quot;)
-  Call&lt;SomeProtoResponse&gt; someProtoEndpoint();
-
-  @GET(&quot;/some/json/endpoint&quot;)
-  Call&lt;SomeJsonResponse&gt; someJsonEndpoint();
-}
-</code></pre>
-<blockquote>
-<p>SomeProtoResponse —&gt; Proto? Yes!</p>
-</blockquote>
-<blockquote>
-<p>原理很简单，其实就是对着每一个 converter 询问他们是否能够处理某种类型。我们问 proto 的 converter： “Hi, 你能处理 SomeProtoResponse 吗？”，然后它尽可能的去判断它是否可以处理这种类型。我们都知道：Protobuff 都是从一个名叫 message 或者 message lite 的类继承而来。所以，判断方法通常就是检查这个类是否继承自 message。<br>
-在面对 JSON 类型的时候，首先问 proto converter，proto converter 会发现这个不是继承子 Message 的，然后回复 no。紧接着移到下一个 JSON converter 上。JSON Converter 会回复说我可以！</p>
-</blockquote>
-<blockquote>
-<p>SomeJsonResponse —&gt; Proto? No! —&gt; JSON? Yes!</p>
-</blockquote>
-<blockquote>
-<p>因为 JSON 并没有什么继承上的约束。所以我们无法通过什么确切的条件来判断一个对象是否是 JSON 对象。以至于 JSON 的 converters 会对任何数据都回复说：我可以处理！这个一定要记住， JSON converter 一定要放在最后，不然会和你的预期不符。</p>
-<p>另一个要注意的是，现在已经不提供默认的 converter 了。如果不显性的声明一个可用的 Converter 的话，Retrofit 是会报错的：提醒你没有可用的 Converter。因为核心代码已经不依赖序列化相关的第三方库了，我们依然提供对 Converter 的支持，不过你需要自己引入这些依赖，同时显性的声明 Retrofit 需要用的 Converter 有哪些。<br>
-添加 converter 的顺序很重要。按照这个顺序，我们将依次询问每一个 converter 能否处理一个类型。我上面写的其实是错的。如果我们试图反序列化一个 proto 格式，它其实会被当做 JSON 来对待。这显然不是我们想要的。我们需要调整下顺序，因为我们先要检查 proto buffer 格式，然后才是 JSON。</p>
-</blockquote>
-<pre><code>Retrofit retrofit = new Retrofit.Builder()
-.baseUrl(&quot;https://api.github.com&quot;)
-.addConverterFactory(ProtoConverterFactory.create())
-.addConverterFactory(GsonConverterFactory.create())
-.build();
-</code></pre>
-<blockquote>
-<p>由于现在Retrofit开始依赖 OkHttp， 并没有 Http Client 层的抽象。现在是可以传递一个配置好的 OkHttp 实例的。比如：配置 interceptors, 或者一个 SSL socket 工厂类， 或者 timeouts 的具体数值。 （OkHttp 有默认的超时机制，如果你不需要自定义，实际上不&gt;必进行任何设置，但是如果你想要去设置它们，下面是一个例子告诉你来怎么操作。）</p>
-</blockquote>
-<pre><code> OkHttpClient client = new OkHttpClient.Builder()
-            .retryOnConnectionFailure(true)			//失败后是否重试
-            .connectTimeout(15, TimeUnit.SECONDS)	//设置连接超时时间
-            .addInterceptor(getHttpInterceptor())	//设置应用拦截器
-            .build();
-
-Retrofit retrofit = new Retrofit.Builder()
-    .baseUrl(&quot;https://api.github.com&quot;)	//设置BaseURL
-    .client(client)						//设置client
-    .build();
-</code></pre>
-<h2 id="3-interceptor">3 Interceptor</h2>
-<blockquote>
-<p>在使用Android retrofit+rxjava时，想获知网络请求的一些参数，方便调试，比如：请求地址、请求响应时间、请求响应消息体等内容，虽然部分可以通过每个接口进行获知，但是这样极其不方便，可以使用拦截器来做统一的操作。</p>
-</blockquote>
-<p>添加拦截器：<br>
-可以针对OkHttpClient.Builder 添加拦截器</p>
-<pre><code>HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);	//设置日志级别
-
-OkHttpClient client = new OkHttpClient.Builder()
-            .retryOnConnectionFailure(true)			//失败后是否重试
-            .connectTimeout(15, TimeUnit.SECONDS)	//设置连接超时时间
-            .addInterceptor(interceptor)	//设置应用拦截器
-            .build();
-</code></pre>
-<h2 id="4cache">4.Cache</h2>
-<blockquote>
-<p>开启OKHttp缓存：</p>
-</blockquote>
-<p>先获取系统外部存储的路径，”xxx”可以自己命名，缓存文件就存在 Android/data/&lt;包名&gt;/cache/resposes。</p>
-<pre><code>File httpCacheDirectory = new File(UIUtils.getContext().getExternalCacheDir(), &quot;xxx&quot;); 
-client.setCache(new Cache(httpCacheDirectory,10 * 1024 * 1024));
-</code></pre>
-<h2 id="5proguard">5.Proguard</h2>
-<blockquote>
-<p>如果你在你的代码里使用代码混淆机制,请在你的配置里添加下面几行.</p>
-</blockquote>
-<pre><code># Platform calls Class.forName on types which do not exist on Android to determine platform.
--dontnote retrofit2.Platform
-# Platform used when running on RoboVM on iOS. Will not be used at runtime.
--dontnote retrofit2.Platform$IOS$MainThreadExecutor
-# Platform used when running on Java 8 VMs. Will not be used at runtime.
--dontwarn retrofit2.Platform$Java8
-# Retain generic type information for use by reflection by converters and adapters.
--keepattributes Signature
-# Retain declared checked exceptions for use by a Proxy instance.
--keepattributes Exceptions
-</code></pre>
-<h2 id="6-nitoice">6 Nitoice</h2>
-<blockquote>
-<p>Retrofit 在请求失败时依然会回调 <code>onResponse()</code>方法。及时response code不是200依然会回调一下方法，需要注意。</p>
-</blockquote>
-<pre><code> public void onResponse(Call&lt;LoginResult&gt; call, Response&lt;LoginResult&gt; response) {
-	 
-}
-</code></pre>
-<h2 id="7references">7:References</h2>
-<ol>
-<li>
-<p>Retrofit github主页：<a href="https://square.github.io/retrofit/" title="retrofit github 主页">https://square.github.io/retrofit/</a></p>
-</li>
-<li>
-<p>Interceptor wiki:	<a href="https://github.com/square/okhttp/wiki/Interceptors" title="retrofit interceptor">https://github.com/square/okhttp/wiki/Interceptors</a></p>
-</li>
-<li>
-<p>用 Retrofit 2 简化 HTTP 请求	<a href="https://realm.io/cn/news/droidcon-jake-wharton-simple-http-retrofit-2/"> https://realm.io/cn/news/droidcon-jake-wharton-simple-http-retrofit-2/</a></p>
-</li>
-<li>
-<p>Http Caching:		<a href="https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=zh-cn" title="Http Cache">https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=zh-cn</a></p>
-</li>
-<li>
-<p>四种常见的 POST 提交数据方式		<a href="https://imququ.com/post/four-ways-to-post-data-in-http.html" title="四种常见的 POST 提交数据方式">https://imququ.com/post/four-ways-to-post-data-in-http.html</a></p>
-</li>
-<li>
-<p>Blog				 <a href="http://wuxiaolong.me/2016/01/15/retrofit/" title="Blog"> http://wuxiaolong.me/2016/01/15/retrofit/</a></p>
-</li>
-<li>
-<p>URL wikipedia: 		<a href="https://zh.wikipedia.org/wiki/%E7%BB%9F%E4%B8%80%E8%B5%84%E6%BA%90%E5%AE%9A%E4%BD%8D%E7%AC%A6" title="URL wikipedia: ">https://zh.wikipedia.org/wiki/%E7%BB%9F%E4%B8%80%E8%B5%84%E6%BA%90%E5%AE%9A%E4%BD%8D%E7%AC%A6</a></p>
-</li>
-</ol>
 ]]></content>
     </entry>
 </feed>
