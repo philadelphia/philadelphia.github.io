@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1594370369447">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1605598601652">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
@@ -36,7 +36,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://philadelphia.github.io">
-        <img src="https://philadelphia.github.io/images/avatar.png?v=1594370369447" class="site-logo">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1605598601652" class="site-logo">
         <h1 class="site-title">philadelphia</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -102,7 +102,7 @@
             <div class="post-date">2020-07-10</div>
             
             <div class="post-content">
-              <p>在JetPack出来之前，我们在做一些比如BroadCastReceiver 之类的注册/解注册之类的活动都需要在Activity的onResume和OnPause之中做处理。如果在Activity销毁时忘记解绑则会导致内存泄露的风险，进而可能引发OOM不过google官方现在给Activity提供了Lifecycle的监听的功能，我们只需要监听Activity对应的状态并给它设置一个LifecycleObserver就好。并处理相应的逻辑就好了。</p>
+              <p>在JetPack出来之前，我们在做一些比如BroadCastReceiver 之类的注册/解注册之类的活动都需要在Activity的onResume和OnPause之中做处理。如果在Activity销毁时忘记解绑则会导致内存泄露的风险，进而可能引发OOM。不过google官方现在给Activity提供了Lifecycle的监听的功能，我们只需要监听Activity对应的状态并给它设置一个LifecycleObserver，然后处理相应的逻辑就好了。</p>
 <h2 id="lifecycle">Lifecycle</h2>
 <pre><code>public abstract class Lifecycle {
    
@@ -144,7 +144,7 @@
     }
 }
 </code></pre>
-<p>Lifecyle 类提供了添加和删除观察者的方法，此外还有两个内部类，Event和Status分别表示生命周期中的时间和状态。</p>
+<p>Lifecyle 类提供了添加和删除观察者的方法，此外还有两个内部类，Event和Status分别表示生命周期中的事件和状态。</p>
 <p>Lifecycle 只有一个直接实现类LifecycleRegistry</p>
 <p>负责Lifecycle 的添加，移出观察者。该类的构造方法如下：</p>
 <pre><code>public LifecycleRegistry(@NonNull LifecycleOwner provider) {
