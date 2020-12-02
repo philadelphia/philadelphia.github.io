@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2020-12-02T07:22:21.693Z</updated>
+    <updated>2020-12-02T07:27:59.998Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -1687,7 +1687,7 @@ public void onBackPressed() {
 <pre><code>mResumedActivity=ActivityRecord{61b664c u0 com.example.installer/.ui.SingleTaskActivity t6360}
         * TaskRecord{4312a6a #6360 A=com.example.installer U=0 StackId=1 sz=2}
         userId=0 effectiveUid=u0a1105 mCallingUid=u0a1105 mUserSetupComplete=true mCallingPackage=com.example.installer
-        affinity=com.example.installer
+       ** affinity=com.example.installer**
         intent={act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 cmp=com.example.installer/.ui.WelcomeActivity}
         realActivity=com.example.installer/.ui.WelcomeActivity
         Activities=[ActivityRecord{301164 u0 com.example.installer/.ui.SingleTopActivity t6360}, ActivityRecord{61b664c u0 com.example.installer/.ui.SingleTaskActivity t6360}]
@@ -1697,7 +1697,10 @@ public void onBackPressed() {
             app=ProcessRecord{bd78b5b 10653:com.example.installer/u0a1105}
             Intent { cmp=com.example.installer/.ui.SingleTaskActivity }
             frontOfTask=false task=TaskRecord{4312a6a #6360 A=com.example.installer U=0 StackId=1 sz=2}
-            taskAffinity=com.example.test
+</code></pre>
+<!-- more -->
+<!-- more -->
+<pre><code>            **taskAffinity=com.example.test**
             realActivity=com.example.installer/.ui.SingleTaskActivity
             baseDir=/data/app/com.example.installer-U815kFDGSxMa7fp67bPz2g==/base.apk
             dataDir=/data/user/0/com.example.installer
@@ -1708,7 +1711,7 @@ public void onBackPressed() {
             app=ProcessRecord{bd78b5b 10653:com.example.installer/u0a1105}
             Intent { cmp=com.example.installer/.ui.SingleTopActivity }
             frontOfTask=true task=TaskRecord{4312a6a #6360 A=com.example.installer U=0 StackId=1 sz=2}
-            taskAffinity=com.example.installer
+            ** taskAffinity=com.example.installer **
             realActivity=com.example.installer/.ui.SingleTopActivity
             baseDir=/data/app/com.example.installer-U815kFDGSxMa7fp67bPz2g==/base.apk
             dataDir=/data/user/0/com.example.installer
@@ -1728,7 +1731,7 @@ TaskRecord{15ec280 #6362 A=com.example.installer U=0 StackId=1 sz=1}
             Run #0: ActivityRecord{4c114aa u0 com.example.installer/.ui.SingleTopActivity t6362}
 </code></pre>
 <p>此时系统有2个TaskRecord里，每个TaskRecord 各自有一个Activity。每个Activity有着不同的TaskAffinity。</p>
-<p>因为，可以得出一个结论就是：TaskAffinity 决定了Activity的分组，同一个的Task里有不同TaskAffinity的Activity。但是</p>
+<p>因为，可以得出一个结论就是：TaskAffinity 决定了Activity的分组，同一个的Task里有不同TaskAffinity的Activity.</p>
 ]]></content>
     </entry>
 </feed>
