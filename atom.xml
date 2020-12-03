@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2020-12-02T07:27:59.998Z</updated>
+    <updated>2020-12-03T07:44:46.610Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -10,6 +10,231 @@
     <logo>https://philadelphia.github.io/images/avatar.png</logo>
     <icon>https://philadelphia.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, philadelphia</rights>
+    <entry>
+        <title type="html"><![CDATA[LeakCanary 分析]]></title>
+        <id>https://philadelphia.github.io/post/leakcanary-fen-xi</id>
+        <link href="https://philadelphia.github.io/post/leakcanary-fen-xi">
+        </link>
+        <updated>2020-12-03T07:35:47.000Z</updated>
+        <content type="html"><![CDATA[<p>LeakCanary是Square公司推出个一个内存泄露检测工具</p>
+<p><a href="https://square.github.io/leakcanary/">地址：https://square.github.io/leakcanary/</a></p>
+<h2 id="使用">使用</h2>
+<p>简单使用</p>
+<p>在项目Model的build.gradle文件中dependencies{}中加入</p>
+<pre><code>debugImplementation 'com.squareup.leakcanary:leakcanary-android:version'
+</code></pre>
+<p>然后在你的App中的onCreate()方法中添加</p>
+<pre><code>LeakCanary.install(this);
+</code></pre>
+<p>这样LeakCanary就可以监控系统的Activity的内存泄露了，默认使用只能检测到Activity的内存泄露。</p>
+<p>如果你想检测其他对象的内存泄露，可以自定义监控对象。</p>
+<pre><code>refWatcher = LeakCanary.install(this);
+</code></pre>
+<p>LeakCanary.install(this) 方法返回一个RefWatcher对象，调用该队的的watch()方法就行了。</p>
+<p>该方法的签名如下</p>
+<pre><code>//传入你想检测的对象
+public void watch(Object watchedReference) {
+  watch(watchedReference, &quot;&quot;);
+}
+
+</code></pre>
+<h2 id="原理">原理</h2>
+<p>LeakCanary 中对内存泄漏检测的核心原理就是基于 WeakReference 和 ReferenceQueue 实现的。</p>
+<ol>
+<li>当一个 Activity 需要被回收时，就将其包装到一个 WeakReference 中，并且在 WeakReference 的构造器中传入自定义的 ReferenceQueue。</li>
+<li>然后给包装后的 WeakReference 做一个标记 Key，并且在一个强引用 Set 中添加相应的 Key 记录</li>
+<li>最后主动触发 GC，遍历自定义 ReferenceQueue 中所有的记录，并根据获取的 Reference 对象将 Set 中的记录也删除</li>
+</ol>
+<p>经过上面 3 步之后，还保留在 Set 中的就是：应当被 GC 回收，但是实际还保留在内存中的对象，也就是发生泄漏了的对象</p>
+<pre><code>public static RefWatcher install(Application application) {
+  return install(application, DisplayLeakService.class);
+}
+
+ public static RefWatcher install(Application application,
+      Class&lt;? extends AbstractAnalysisResultService&gt; listenerServiceClass) {
+    if (isInAnalyzerProcess(application)) {
+      return RefWatcher.DISABLED;
+    }
+    enableDisplayLeakActivity(application);
+    HeapDump.Listener heapDumpListener =
+        new ServiceHeapDumpListener(application, listenerServiceClass);
+    RefWatcher refWatcher = androidWatcher(application, heapDumpListener);
+  //  LeakCanary 中监听 Activity 生命周期是由 ActivityRefWatch 来负责的，主要是通过注册 Android 系统提供的 ActivityLifecycleCallbacks，来监听 Activity 的生命周期方法的调用，
+    ActivityRefWatcher.installOnIcsPlus(application, refWatcher);//默认只检测Activity的内存泄露
+    return refWatcher;//返回refWatcher对象，
+  }
+</code></pre>
+<p>RefWatcher对象的构造方法如下。</p>
+<pre><code>  private final Executor watchExecutor; //线程池
+  private final DebuggerControl debuggerControl;
+  private final GcTrigger gcTrigger;//GC触发器
+  private final HeapDumper heapDumper;
+  private final Set&lt;String&gt; retainedKeys; //检测对象的Key集合
+  private final ReferenceQueue&lt;Object&gt; queue;//若引用队列
+  private final HeapDump.Listener heapdumpListener;
+  
+public RefWatcher(Executor watchExecutor, DebuggerControl debuggerControl, GcTrigger gcTrigger,HeapDumper heapDumper, HeapDump.Listener heapdumpListener) {
+	this.watchExecutor = checkNotNull(watchExecutor, &quot;watchExecutor&quot;);
+  this.debuggerControl = checkNotNull(debuggerControl, &quot;debuggerControl&quot;);
+  this.gcTrigger = checkNotNull(gcTrigger, &quot;gcTrigger&quot;);
+  this.heapDumper = checkNotNull(heapDumper, &quot;heapDumper&quot;);
+  this.heapdumpListener = checkNotNull(heapdumpListener, &quot;heapdumpListener&quot;);
+  retainedKeys = new CopyOnWriteArraySet&lt;&gt;();
+  queue = new ReferenceQueue&lt;&gt;();
+}
+</code></pre>
+<p>我们看下ActivityRefWatcher这个类的内部实现，该类只支持ICE_CREAM_SANDWICH以上的版本。</p>
+<pre><code>@TargetApi(ICE_CREAM_SANDWICH) public final class ActivityRefWatcher {
+
+
+  private final Application application;
+  private final RefWatcher refWatcher;
+  
+  public static void installOnIcsPlus(Application application, RefWatcher refWatcher) {
+   低于ICE_CREAM_SANDWICH版本的自己在BaseActivity的onDestroy方法中处理
+   if (SDK_INT &lt; ICE_CREAM_SANDWICH) {
+      // If you need to support Android &lt; ICS, override onDestroy() in your base activity.
+      return;
+    }
+    ActivityRefWatcher activityRefWatcher = new ActivityRefWatcher(application, refWatcher);
+    activityRefWatcher.watchActivities();
+  }
+
+  /**
+   * Constructs an {@link ActivityRefWatcher} that will make sure the activities are not leaking
+   * after they have been destroyed.
+   */
+  public ActivityRefWatcher(Application application, final RefWatcher refWatcher) {
+    this.application = checkNotNull(application, &quot;application&quot;);
+    this.refWatcher = checkNotNull(refWatcher, &quot;refWatcher&quot;);
+  }
+
+
+  public void watchActivities() {
+    // Make sure you don't get installed twice.
+    stopWatchingActivities();
+//   application注册ActivityLifecycleCallbacks接口
+    application.registerActivityLifecycleCallbacks(lifecycleCallbacks);
+  }
+
+  public void stopWatchingActivities() {
+    application.unregisterActivityLifecycleCallbacks(lifecycleCallbacks);
+  }
+  
+  private final Application.ActivityLifecycleCallbacks接口 lifecycleCallbacks =
+      new Application.ActivityLifecycleCallbacks() {
+        @Override public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+        }
+
+        @Override public void onActivityStarted(Activity activity) {
+        }
+
+        @Override public void onActivityResumed(Activity activity) {
+        }
+
+        @Override public void onActivityPaused(Activity activity) {
+        }
+
+        @Override public void onActivityStopped(Activity activity) {
+        }
+
+        @Override public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
+        }
+
+				//在Activity销毁时开启检测
+        @Override public void onActivityDestroyed(Activity activity) {
+          ActivityRefWatcher.this.onActivityDestroyed(activity);
+        }
+      };
+      
+          //检测
+  void onActivityDestroyed(Activity activity) {
+    refWatcher.watch(activity);
+  }
+      
+}
+</code></pre>
+<p>最后调用refWatcher对象的watch方法。最后回调它的重载方法。</p>
+<pre><code>public void watch(Object watchedReference) {
+  watch(watchedReference, &quot;&quot;);
+}
+
+ public void watch(Object watchedReference, String referenceName) {
+ 	//对检测对象和引用名称判空
+    checkNotNull(watchedReference, &quot;watchedReference&quot;);
+    checkNotNull(referenceName, &quot;referenceName&quot;);
+    if (debuggerControl.isDebuggerAttached()) {
+      return;
+    }
+    //检测开始时间
+    final long watchStartNanoTime = System.nanoTime();
+    //随机生成Key
+    String key = UUID.randomUUID().toString();
+    //将Key放入retainedKeys集合中，retainedKeys是一个CopyOnWriteArraySet对象。
+    retainedKeys.add(key);
+    //将检测对象，key,referenceName，queue 构建一个KeyedWeakReference对象
+    final KeyedWeakReference reference =
+        new KeyedWeakReference(watchedReference, key, referenceName, queue);
+
+		//向线程池watchExecutor提交一个任务。在该任务里启动检测。
+    watchExecutor.execute(new Runnable() {
+      @Override public void run() {
+        ensureGone(reference, watchStartNanoTime);
+      }
+    });
+  }
+  
+  
+  void ensureGone(KeyedWeakReference reference, long watchStartNanoTime) {
+   	long gcStartNanoTime = System.nanoTime();
+
+    long watchDurationMs = NANOSECONDS.toMillis(gcStartNanoTime - watchStartNanoTime);
+    //移出引用队列里的对象
+    removeWeaklyReachableReferences();
+    if (gone(reference) || debuggerControl.isDebuggerAttached()) {
+      return;
+    }
+    //启动垃圾回收
+    gcTrigger.runGc();
+    //移出引用队列里的对象
+    removeWeaklyReachableReferences();
+    //如果retainedKeys里边依然包含改若引用对象的key.说明该弱对象引用的对象泄露了。
+    if (!gone(reference)) {
+      long startDumpHeap = System.nanoTime();
+      long gcDurationMs = NANOSECONDS.toMillis(startDumpHeap - gcStartNanoTime);
+			//生成Dump文件
+      File heapDumpFile = heapDumper.dumpHeap();
+
+      if (heapDumpFile == null) {
+        // Could not dump the heap, abort.
+        return;
+      }
+      long heapDumpDurationMs = NANOSECONDS.toMillis(System.nanoTime() - startDumpHeap);
+      heapdumpListener.analyze(
+          new HeapDump(heapDumpFile, reference.key, reference.name, watchDurationMs, gcDurationMs,
+              heapDumpDurationMs));
+    }
+  }
+  
+  //移出如引用对象
+   private void removeWeaklyReachableReferences() {
+    // WeakReferences are enqueued as soon as the object to which they point to becomes weakly
+    // reachable. This is before finalization or garbage collection has actually happened.
+    //垃圾回收启动之前，一旦弱引用对象引用的对象变得弱引用时，弱引用对象就会加入到它内部的队列里。
+    KeyedWeakReference ref;
+    //遍历队列，如果队列里的元素等于当前的对象，说明当前对象被回收了，就从retainedKeys里移出弱引用对象对一个的key.
+    while ((ref = (KeyedWeakReference) queue.poll()) != null) {
+      retainedKeys.remove(ref.key);
+    }
+  }
+  
+  //判断当前的reference对象对象的Key是否包含在retainedKeys，如果在就说明reference没有被垃圾回收
+   private boolean gone(KeyedWeakReference reference) {
+    return !retainedKeys.contains(reference.key);
+  }
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[ JetPack 系列之Lifecycle]]></title>
         <id>https://philadelphia.github.io/post/jetpack-xi-lie-zhi-lifecycle</id>
@@ -1597,141 +1822,6 @@ Orange</p>
 <img src="https://philadelphia.github.io/post-images/1574247141968.jpg" alt=""></p>
 <p>这个时候APP启动后不会继续执行，等我们点击debug 按钮后APP才会继续往下执行，这个时候我们就可以调试了。debug 完毕后关闭就行了。<br>
 <img src="https://philadelphia.github.io/post-images/1574247152856.jpg" alt=""></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Activity launchMode在开发中的一些使用]]></title>
-        <id>https://philadelphia.github.io/post/activity-launchmode-zai-kai-fa-zhong-de-yi-xie-shi-yong</id>
-        <link href="https://philadelphia.github.io/post/activity-launchmode-zai-kai-fa-zhong-de-yi-xie-shi-yong">
-        </link>
-        <updated>2019-11-19T10:54:50.000Z</updated>
-        <summary type="html"><![CDATA[<p>最近在做APP的通知模块时，产品要求点击通知后</p>
-<ol>
-<li>在用户登录的情况下直接进入到通知消息的详情页，</li>
-<li>没有登录的情况下先进行登录，然后在跳转到消息的详情页</li>
-</ol>
-<p>但是登录页面可能包含了N多个步骤，所以最好的方式是当用户没有登录的情况下使用startActivityForResult进行登录请求，把登录功能当做一个模块，<br>
-因为登录支持很多方式登录，用户在登录页面可能使用账密登录或者点击其他登录选项使用其他方式登录，<br>
-我们只需要关注LogInActivity就行了，<br>
-如果使用其他登录方式进行登录，当登录成功后跳转到LogInActivity<br>
-我们可以给跳转intent设置flag<br>
-intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);</p>
-<p>只有这两种启动标志组合使用，才会调用LogInActivity的onNewIntent方法。<br>
-而如果单独使用<br>
-intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);<br>
-的话，会将LoginActivity提到栈顶并销毁其他Activity，但是并不会回调onNewIntent方法。</p>
-<p>这样的话我们就相当于使用singleTask的方式启动了LogInActivity<br>
-这样中间登录步骤的页面就可以全部销毁了。<br>
-然后在LogInActivity的onNewIntent()方法中setResult(Activity.Result_OK）来告诉强求页登录成功了，</p>
-<pre><code>@Override
-protected void onNewIntent(Intent intent) {
-      super.onNewIntent(intent);
-      setResult(RESULT_OK);
-      finish();   
-}
-</code></pre>
-<p>没有登录的情况下复写onBackPressed()方法就行了，因为不论使用何种登录方式，只要进行到一半返回，最终没有完成登录返回的话一定会调用onBackPressed方法。因为只用成功才会自动finish LoginActivity</p>
-<pre><code>@Override
-public void onBackPressed() {
-    super.onBackPressed();
-    setResult(RESULT_CANCELED);
-}
-</code></pre>
-<p>其他功能也类似，比如认证相关的功能。</p>
-<h2 id="taskaffinity">TaskAffinity</h2>
-<p>每个Activity都有taskAffinity属性，这个属性指出了它希望进入的Task。如果一个Activity没有显式的指明该Activity的taskAffinity，那么它的这个属性就等于Application指明的taskAffinity，如果Application也没有指明，那么该taskAffinity的值就等于包名。而TaskRecord也有自己的affinity属性，它的值等于它的根Activity的taskAffinity的值<br>
-当我们在manifest 中设置Activity的taskAffinity属性时 android:taskAffinity=&quot;com.example.test&quot;<br>
-此时启动activity，然后执行</p>
-<pre><code> adb shell dumpsys activity activities</code></pre>
-]]></summary>
-        <content type="html"><![CDATA[<p>最近在做APP的通知模块时，产品要求点击通知后</p>
-<ol>
-<li>在用户登录的情况下直接进入到通知消息的详情页，</li>
-<li>没有登录的情况下先进行登录，然后在跳转到消息的详情页</li>
-</ol>
-<p>但是登录页面可能包含了N多个步骤，所以最好的方式是当用户没有登录的情况下使用startActivityForResult进行登录请求，把登录功能当做一个模块，<br>
-因为登录支持很多方式登录，用户在登录页面可能使用账密登录或者点击其他登录选项使用其他方式登录，<br>
-我们只需要关注LogInActivity就行了，<br>
-如果使用其他登录方式进行登录，当登录成功后跳转到LogInActivity<br>
-我们可以给跳转intent设置flag<br>
-intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);</p>
-<p>只有这两种启动标志组合使用，才会调用LogInActivity的onNewIntent方法。<br>
-而如果单独使用<br>
-intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);<br>
-的话，会将LoginActivity提到栈顶并销毁其他Activity，但是并不会回调onNewIntent方法。</p>
-<p>这样的话我们就相当于使用singleTask的方式启动了LogInActivity<br>
-这样中间登录步骤的页面就可以全部销毁了。<br>
-然后在LogInActivity的onNewIntent()方法中setResult(Activity.Result_OK）来告诉强求页登录成功了，</p>
-<pre><code>@Override
-protected void onNewIntent(Intent intent) {
-      super.onNewIntent(intent);
-      setResult(RESULT_OK);
-      finish();   
-}
-</code></pre>
-<p>没有登录的情况下复写onBackPressed()方法就行了，因为不论使用何种登录方式，只要进行到一半返回，最终没有完成登录返回的话一定会调用onBackPressed方法。因为只用成功才会自动finish LoginActivity</p>
-<pre><code>@Override
-public void onBackPressed() {
-    super.onBackPressed();
-    setResult(RESULT_CANCELED);
-}
-</code></pre>
-<p>其他功能也类似，比如认证相关的功能。</p>
-<h2 id="taskaffinity">TaskAffinity</h2>
-<p>每个Activity都有taskAffinity属性，这个属性指出了它希望进入的Task。如果一个Activity没有显式的指明该Activity的taskAffinity，那么它的这个属性就等于Application指明的taskAffinity，如果Application也没有指明，那么该taskAffinity的值就等于包名。而TaskRecord也有自己的affinity属性，它的值等于它的根Activity的taskAffinity的值<br>
-当我们在manifest 中设置Activity的taskAffinity属性时 android:taskAffinity=&quot;com.example.test&quot;<br>
-此时启动activity，然后执行</p>
-<pre><code> adb shell dumpsys activity activities
-</code></pre>
-<!-- more -->
-<pre><code>mResumedActivity=ActivityRecord{61b664c u0 com.example.installer/.ui.SingleTaskActivity t6360}
-        * TaskRecord{4312a6a #6360 A=com.example.installer U=0 StackId=1 sz=2}
-        userId=0 effectiveUid=u0a1105 mCallingUid=u0a1105 mUserSetupComplete=true mCallingPackage=com.example.installer
-       ** affinity=com.example.installer**
-        intent={act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 cmp=com.example.installer/.ui.WelcomeActivity}
-        realActivity=com.example.installer/.ui.WelcomeActivity
-        Activities=[ActivityRecord{301164 u0 com.example.installer/.ui.SingleTopActivity t6360}, ActivityRecord{61b664c u0 com.example.installer/.ui.SingleTaskActivity t6360}]
-        * Hist #1: ActivityRecord{61b664c u0 com.example.installer/.ui.SingleTaskActivity t6360}
-            packageName=com.example.installer processName=com.example.installer
-            launchedFromUid=11105 launchedFromPackage=com.example.installer userId=0
-            app=ProcessRecord{bd78b5b 10653:com.example.installer/u0a1105}
-            Intent { cmp=com.example.installer/.ui.SingleTaskActivity }
-            frontOfTask=false task=TaskRecord{4312a6a #6360 A=com.example.installer U=0 StackId=1 sz=2}
-</code></pre>
-<!-- more -->
-<!-- more -->
-<pre><code>            **taskAffinity=com.example.test**
-            realActivity=com.example.installer/.ui.SingleTaskActivity
-            baseDir=/data/app/com.example.installer-U815kFDGSxMa7fp67bPz2g==/base.apk
-            dataDir=/data/user/0/com.example.installer
-            realComponentName=com.example.installer/.ui.SingleTaskActivity
-        * Hist #0: ActivityRecord{301164 u0 com.example.installer/.ui.SingleTopActivity t6360}
-            packageName=com.example.installer processName=com.example.installer
-            launchedFromUid=11105 launchedFromPackage=com.example.installer userId=0
-            app=ProcessRecord{bd78b5b 10653:com.example.installer/u0a1105}
-            Intent { cmp=com.example.installer/.ui.SingleTopActivity }
-            frontOfTask=true task=TaskRecord{4312a6a #6360 A=com.example.installer U=0 StackId=1 sz=2}
-            ** taskAffinity=com.example.installer **
-            realActivity=com.example.installer/.ui.SingleTopActivity
-            baseDir=/data/app/com.example.installer-U815kFDGSxMa7fp67bPz2g==/base.apk
-            dataDir=/data/user/0/com.example.installer
-            realComponentName=com.example.installer/.ui.SingleTopActivity
-    TaskRecord{4312a6a #6360 A=com.example.installer U=0 StackId=1 sz=2}
-            Run #1: ActivityRecord{61b664c u0 com.example.installer/.ui.SingleTaskActivity t6360}
-            Run #0: ActivityRecord{301164 u0 com.example.installer/.ui.SingleTopActivity t6360}
-</code></pre>
-<p>此时系统只有一个TaskRecord,里边有两个Activity。也就是说即使Activity设置了不同的taskAffinity属性，但是launchMode不是singleTask或者singleInstance,此时系统依然会将activity放置在同一个TaskRecord中。<br>
-当对SingleTaskActivity的launchMode设置为singleTask后再次执行</p>
-<pre><code>adb shell dumpsys activity activities
-</code></pre>
-<!-- more -->
-<pre><code>TaskRecord{ab8f7b2 #6363 A=com.example.test U=0 StackId=1 sz=1}
-            Run #1: ActivityRecord{e445992 u0 com.example.installer/.ui.SingleTaskActivity t6363}
-TaskRecord{15ec280 #6362 A=com.example.installer U=0 StackId=1 sz=1}
-            Run #0: ActivityRecord{4c114aa u0 com.example.installer/.ui.SingleTopActivity t6362}
-</code></pre>
-<p>此时系统有2个TaskRecord里，每个TaskRecord 各自有一个Activity。每个Activity有着不同的TaskAffinity。</p>
-<p>因为，可以得出一个结论就是：TaskAffinity 决定了Activity的分组，同一个的Task里有不同TaskAffinity的Activity.</p>
 ]]></content>
     </entry>
 </feed>
