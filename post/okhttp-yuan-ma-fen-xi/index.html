@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1606982454837">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1607248897343">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
@@ -36,7 +36,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://philadelphia.github.io">
-        <img src="https://philadelphia.github.io/images/avatar.png?v=1606982454837" class="site-logo">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1607248897343" class="site-logo">
         <h1 class="site-title">philadelphia</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -102,10 +102,17 @@
             <div class="post-date">2019-08-16</div>
             
             <div class="post-content">
-              <p>基于OkHttp3.11.0</p>
+              <p>OkHttp 源码分析</p>
+<p>基于OkHttp3.11.0</p>
 <pre><code>implementation(&quot;com.squareup.okhttp3:okhttp:3.11.0&quot;)
 </code></pre>
-<p>网络框架的核心思想都是构建基本的执行单元之后(1)，根据任务类型放入对应的任务队列里(2)，再由线程池去执行(3)。OKHttp也不列外。</p>
+<p>网络框架的核心思想基本都是：</p>
+<ol>
+<li>构建基本的执行单元之后</li>
+<li>根据任务类型放入对应的任务队列里</li>
+<li>再由线程池去执行。</li>
+</ol>
+<p>OKHttp也不例外。</p>
 <h1 id="初始化okhttpclient">初始化OKHttpClient</h1>
 <p>OKHttpclient采用了Builder模式创建</p>
 <pre><code class="language-java">OkHttpClient okHttpClient = new OkHttpClient.Builder()
@@ -132,32 +139,9 @@ Request post = new Request.Builder().url(&quot;www.baidu.com&quot;)
         .build();
 </code></pre>
 <h1 id="执行">执行</h1>
-<h2 id="1同步执行">1：同步执行</h2>
-<pre><code class="language-Java">try {
-    Response response = okHttpClient.newCall(post).execute();
-    if (response.code() ==  200){
-     	 }
-
-} catch (IOException e) {
-
-}
+<h2 id="1构建call对象">1：构建Call对象</h2>
+<pre><code>Call call = okHttpClient.newCall(request)
 </code></pre>
-<p>然后就可以根据response的结果操作了。</p>
-<h2 id="2异步执行">2：异步执行</h2>
-<pre><code class="language-java">okHttpClient.newCall(request).enqueue(new Callback() {
-    @Override
-    public void onFailure(Call call, IOException e) {
-        
-    }
-
-    @Override
-    public void onResponse(Call call, Response response) throws IOException {
-
-    }
-});
-</code></pre>
-<p>在对应的回调函数里做对应的业务逻辑。</p>
-<p>以上就是OKHttp的使用的基本使用。</p>
 <p>这里Request就是请求单元,不论是同步执行还是异步执行，都调用okHttpClient.newCall(request) 生成了一个RealCall对象，然后分别调用该对象的execute(同步执行)方法或者enqueue(异步执行)方法。</p>
 <pre><code class="language-Java">@Override public Call newCall(Request request) {
   return RealCall.newRealCall(this, request, false /* for web socket */);
@@ -178,7 +162,17 @@ Request post = new Request.Builder().url(&quot;www.baidu.com&quot;)
   this.retryAndFollowUpInterceptor = new RetryAndFollowUpInterceptor(client, forWebSocket);
 }
 </code></pre>
-<p>可以看到，newRealCall方法将client作为自己构造函数的参数传入</p>
+<p>可以看到，newRealCall方法将client作为自己构造函数的参数传入,即每个Call对象都持有Client的引用。</p>
+<h2 id="2执行">2：执行</h2>
+<h3 id="1同步执行">1：同步执行</h3>
+<pre><code class="language-Java">try {
+    Response response = okHttpClient.newCall(post).execute();
+    if (response.code() ==  200){
+     	 }
+} catch (IOException e) {
+
+}
+</code></pre>
 <p>下面这个方法是RealCall对象的execute方法</p>
 <pre><code>@Override public Response execute() throws IOException {
   synchronized (this) {
@@ -226,23 +220,25 @@ Request post = new Request.Builder().url(&quot;www.baidu.com&quot;)
 </code></pre>
 <p>分别看到，这个类的同步执行方法是</p>
 <pre><code>synchronized void executed(RealCall call) {
-  runningSyncCalls.add(call);
+ //将改call假如同步执行队列中
+ runningSyncCalls.add(call);
 }
 </code></pre>
-<p>将改call假如同步执行队列中。</p>
-<pre><code>synchronized void enqueue(AsyncCall call) {
-  if (runningAsyncCalls.size() &lt; maxRequests &amp;&amp; runningCallsForHost(call) &lt; maxRequestsPerHost) {
-    runningAsyncCalls.add(call);
-    executorService().execute(call);
-  } else {
-    readyAsyncCalls.add(call);
-  }
-}
+<h3 id="2异步执行">2：异步执行</h3>
+<pre><code class="language-java">okHttpClient.newCall(request).enqueue(new Callback() {
+    @Override
+    public void onFailure(Call call, IOException e) {
+        
+    }
+
+    @Override
+    public void onResponse(Call call, Response response) throws IOException {
+
+    }
+});
 </code></pre>
-<p>异步执行方法是先进行判断，只有正在执行的异步任务队列长度小于了最大的请求数并且改请求的主机的正在请求数量小于每个主句的同时的最大连接数世才将改请求加入到正在执行的异步任务队列里，然后由具体的执行任务来执行这个请求任务。</p>
-<p>不然就把这个任务加入到待执行的异步执行队队列。</p>
-<p>这里RealCall 对象突然就变成了一个AsyncCall对象</p>
-<pre><code class="language-Java">@Override public void enqueue(Callback responseCallback) {
+<p>将callBack对象包装成一个AsyncCall对象加入到Dispatcher.</p>
+<pre><code>@Override public void enqueue(Callback responseCallback) {
   synchronized (this) {
     if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
     executed = true;
@@ -250,6 +246,18 @@ Request post = new Request.Builder().url(&quot;www.baidu.com&quot;)
   captureCallStackTrace();
   eventListener.callStart(this);
   client.dispatcher().enqueue(new AsyncCall(responseCallback));
+}
+</code></pre>
+<p>将AsyncCall对象交给Dispatcher对象执行。</p>
+<pre><code>synchronized void enqueue(AsyncCall call) {
+	//首先判断当前的异步任务是否大于最大的异步任务数量（默认64） &amp;&amp; 当前call对象的连接主机的访问数量是否大于主机支持的最大访问量（默认是5），如果同时满足以上两个条件，则将任务加到runningAsyncCalls
+	如果不满足这两个条件中的任一个，则将异步任务加入到待执行队列里。
+  if (runningAsyncCalls.size() &lt; maxRequests &amp;&amp; runningCallsForHost(call) &lt; maxRequestsPerHost) {
+    runningAsyncCalls.add(call);
+    executorService().execute(call);
+  } else {
+    readyAsyncCalls.add(call);
+  }
 }
 </code></pre>
 <p>在RealCall执行enqueue方法时将一个回调对象作为构造参数生成了一个AsyncCall对象，传入了Dispatcher的enqueue方法。</p>
@@ -263,29 +271,9 @@ Request post = new Request.Builder().url(&quot;www.baidu.com&quot;)
   }
 </code></pre>
 <p>Async对象其实继承了NamedRunnable。而NamedRunnable实现了Runnable接口，可以看出其实Async其实就是一个命名后的runnable对象。</p>
-<p>这里把RealCall同步执行和异步执行的代码列出来</p>
-<p>1：同步执行</p>
-<pre><code class="language-Java">@Override public Response execute() throws IOException {
-  synchronized (this) {
-    if (executed) throw new IllegalStateException(&quot;Already Executed&quot;);
-    executed = true;
-  }
-  captureCallStackTrace();
-  eventListener.callStart(this);
-  try {
-    client.dispatcher().executed(this);
-    Response result = getResponseWithInterceptorChain();
-    if (result == null) throw new IOException(&quot;Canceled&quot;);
-    return result;
-  } catch (IOException e) {
-    eventListener.callFailed(this, e);
-    throw e;
-  } finally {
-    client.dispatcher().finished(this);
-  }
-}
+<pre><code>client.dispatcher().enqueue(new AsyncCall(responseCallback));
 </code></pre>
-<p>2：异步执行</p>
+<p>加入到Dispatcher中，最后交给Dispatcher中的executorService来执行该任务。</p>
 <p>最终调用AsyncCall对象的execute方法</p>
 <pre><code>@Override protected void execute() {
     boolean signalledCallback = false;
