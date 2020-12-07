@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2020-12-07T07:00:54.457Z</updated>
+    <updated>2020-12-07T07:18:07.380Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -12,8 +12,8 @@
     <rights>All rights reserved 2020, philadelphia</rights>
     <entry>
         <title type="html"><![CDATA[LeakCanary 分析]]></title>
-        <id>https://philadelphia.github.io/post/leakcanary-fen-xi</id>
-        <link href="https://philadelphia.github.io/post/leakcanary-fen-xi">
+        <id>https://philadelphia.github.io/post/leakcanary_analyse</id>
+        <link href="https://philadelphia.github.io/post/leakcanary_analyse">
         </link>
         <updated>2020-12-03T07:35:47.000Z</updated>
         <content type="html"><![CDATA[<p>LeakCanary是Square公司推出个一个内存泄露检测工具</p>
@@ -237,8 +237,8 @@ public RefWatcher(Executor watchExecutor, DebuggerControl debuggerControl, GcTri
     </entry>
     <entry>
         <title type="html"><![CDATA[Handler 引起的内存泄露分析以及解决方法]]></title>
-        <id>https://philadelphia.github.io/post/analyse memory leak caused by handler</id>
-        <link href="https://philadelphia.github.io/post/analyse memory leak caused by handler">
+        <id>https://philadelphia.github.io/post/analyse_memory_leak_caused_by_handler</id>
+        <link href="https://philadelphia.github.io/post/analyse_memory_leak_caused_by_handler">
         </link>
         <updated>2020-09-17T09:36:50.000Z</updated>
         <content type="html"><![CDATA[<h1 id="handler-引起的内存泄露分析以及解决方法">Handler 引起的内存泄露分析以及解决方法</h1>
@@ -414,8 +414,8 @@ public Handler(Callback callback, boolean async) {
     </entry>
     <entry>
         <title type="html"><![CDATA[ JetPack 系列之Lifecycle]]></title>
-        <id>https://philadelphia.github.io/post/jetpack-xi-lie-zhi-lifecycle</id>
-        <link href="https://philadelphia.github.io/post/jetpack-xi-lie-zhi-lifecycle">
+        <id>https://philadelphia.github.io/post/jetpack_series_lifecycle</id>
+        <link href="https://philadelphia.github.io/post/jetpack_series_lifecycle">
         </link>
         <updated>2020-07-10T07:37:26.000Z</updated>
         <content type="html"><![CDATA[<p>在JetPack出来之前，我们在做一些比如BroadCastReceiver 之类的注册/解注册之类的活动都需要在Activity的onResume和OnPause之中做处理。如果在Activity销毁时忘记解绑则会导致内存泄露的风险，进而可能引发OOM。不过google官方现在给Activity提供了Lifecycle的监听的功能，我们只需要监听Activity对应的状态并给它设置一个LifecycleObserver，然后处理相应的逻辑就好了。</p>
@@ -813,8 +813,8 @@ void setProcessListener(ActivityInitializationListener processListener) {
     </entry>
     <entry>
         <title type="html"><![CDATA[ 使用Callable 和Future创建线程]]></title>
-        <id>https://philadelphia.github.io/post/shi-yong-callable-he-future-chuang-jian-xian-cheng</id>
-        <link href="https://philadelphia.github.io/post/shi-yong-callable-he-future-chuang-jian-xian-cheng">
+        <id>https://philadelphia.github.io/post/create_thread_with_callable_and_future</id>
+        <link href="https://philadelphia.github.io/post/create_thread_with_callable_and_future">
         </link>
         <updated>2020-06-30T02:25:43.000Z</updated>
         <content type="html"><![CDATA[<p>除了常用的创建线程的方式，我们也可以使用Callable和Future创建线程。前面已经说过，这种方式的本质上和其他创建线程的方式是一致的，只有这种创建线程的方式是可以回去线程的返回结果的。</p>
