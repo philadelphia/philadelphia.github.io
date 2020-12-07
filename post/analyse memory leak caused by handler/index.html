@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1607323335809">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1607324448370">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
@@ -36,7 +36,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://philadelphia.github.io">
-        <img src="https://philadelphia.github.io/images/avatar.png?v=1607323335809" class="site-logo">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1607324448370" class="site-logo">
         <h1 class="site-title">philadelphia</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -99,7 +99,7 @@
         <div class="content-container" data-aos="fade-up">
           <div class="post-detail">
             <h2 class="post-title">Handler 引起的内存泄露分析以及解决方法</h2>
-            <div class="post-date">2019-08-16</div>
+            <div class="post-date">2020-09-17</div>
             
             <div class="post-content">
               <h1 id="handler-引起的内存泄露分析以及解决方法">Handler 引起的内存泄露分析以及解决方法</h1>
@@ -168,7 +168,7 @@ protected void onCreate(Bundle savedInstanceState) {
 <p>可以看到，在enqueueMessage的实现中。将msg.target = this;</p>
 <p>就是讲改Handler对象赋值给了message的target对象。所以message对象就引用了Handler对象''</p>
 <p>进而messageQueue对象就引用了Handler对象。此次逐渐明朗。就是Looper ——&gt; messagequeue ——&gt;  message ——&gt; Handler ——&gt; Activity。</p>
-<figure data-type="image" tabindex="1"><img src="https://philadelphia.github.io/post-images/1607323244410.png" alt="Looper到Activity的引用路径"></figure>
+<figure data-type="image" tabindex="1"><img src="https://philadelphia.github.io/post-images/1607324346612.png" alt="Looper到Activity的引用路径"></figure>
 <p>所以我们可以在任一环节做文章即可避免Handler持有Activity对象导致的内存泄露问题。</p>
 <p>我们可以在Activity销毁时将任务队列清空，或者 在Activity 销毁时将Handler对象销毁。</p>
 <p>总之，就是在任一环节将该引用链条切换就好了，这样GC就可以销毁Activity对象了。</p>
@@ -259,7 +259,7 @@ public Handler(Callback callback, boolean async) {
 <p>在prepare方法中首先从sThreadLocal对象中取出looper对象。如果不为null.说明已经初始化过了，直接抛出异常。</p>
 <p>没有初始化的话直接初始化然后放到sThreadLocal中。sThreadLocal是一个ThreadLocal类型。持有线程的私有数据。</p>
 <p>此时，真相大白了。主线程的ThreadLocal——&gt;looper——&gt;messagequue——&gt;message——&gt;handler——&gt;Acitivity<br>
-<img src="https://philadelphia.github.io/post-images/1607323184380.png" alt="Handler 内存引用示意图"></p>
+<img src="https://philadelphia.github.io/post-images/1607324416635.png" alt="Handler 内存引用示意图"></p>
 <p>因为APP在活动中，所以主线程一直存在。looper一直存在，messageQueue一直存在。所以当我们发送了延迟消息时，而此时Activity销毁的话。自然会引起内存泄露的。</p>
 <p>解决方法也很明了了。既然我们不能再looper层面做文章，就只能在handler和message层面做文章了。</p>
 <ol>
@@ -274,12 +274,20 @@ public Handler(Callback callback, boolean async) {
 
             </div>
             
+              <div class="tag-container">
+                
+                  <a href="https://philadelphia.github.io/tag/KjjeyKwKn" class="tag">
+                    Android
+                  </a>
+                
+              </div>
+            
             
               <div class="next-post">
                 <div class="next">下一篇</div>
-                <a href="https://philadelphia.github.io/post/hello-gridea">
+                <a href="https://philadelphia.github.io/post/jetpack-xi-lie-zhi-lifecycle">
                   <h3 class="post-title">
-                    Hello Gridea
+                     JetPack 系列之Lifecycle
                   </h3>
                 </a>
               </div>
