@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://philadelphia.github.io</id>
     <title>philadelphia</title>
-    <updated>2020-12-07T07:19:15.539Z</updated>
+    <updated>2020-12-13T04:40:01.748Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://philadelphia.github.io"/>
     <link rel="self" href="https://philadelphia.github.io/atom.xml"/>
@@ -10,6 +10,147 @@
     <logo>https://philadelphia.github.io/images/avatar.png</logo>
     <icon>https://philadelphia.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, philadelphia</rights>
+    <entry>
+        <title type="html"><![CDATA[Jetpack 之ViewModel]]></title>
+        <id>https://philadelphia.github.io/post/jetpack-zhi-viewmodel</id>
+        <link href="https://philadelphia.github.io/post/jetpack-zhi-viewmodel">
+        </link>
+        <updated>2020-12-13T04:39:16.000Z</updated>
+        <content type="html"><![CDATA[<p>ViewModelScope是viewModel的管理者，而ViewModelProvider是ViewModel的间接管理者。<br>
+我们一般使用的时候都是ViewModel持有LiveData</p>
+<h3 id="使用">使用</h3>
+<p>我们一般获取ViewModel对象都是使用ViewModelProvider的get()方法。<br>
+在Activity或者Fragment 里调用</p>
+<pre><code>val  viewProvider:ViewModelProvider  = ViewModelProvider(MainActivity@this)
+val viewModel:MainViewModel =  viewProvider .get(MainViewModel::class.java)
+</code></pre>
+<p>首先得到ViewModelProvider对象</p>
+<pre><code>public ViewModelProvider(@NonNull ViewModelStoreOwner owner) {
+    this(owner.getViewModelStore(), owner instanceof HasDefaultViewModelProviderFactory
+            ? ((HasDefaultViewModelProviderFactory) owner).getDefaultViewModelProviderFactory()
+            : NewInstanceFactory.getInstance());
+}
+</code></pre>
+<p>get方法</p>
+<pre><code>public &lt;T extends ViewModel&gt; T get(@NonNull Class&lt;T&gt; modelClass) {
+    //取出modelClass的全限定名
+    String canonicalName = modelClass.getCanonicalName();
+    if (canonicalName == null) {
+        throw new IllegalArgumentException(&quot;Local and anonymous classes can not be ViewModels&quot;);
+    }
+ //  DEFAULT_KEY =&quot;androidx.lifecycle.ViewModelProvider.DefaultKey&quot;
+   //生成新的Key
+   return get(DEFAULT_KEY + &quot;:&quot; + canonicalName, modelClass);
+}
+</code></pre>
+<p>最终调用</p>
+<pre><code>public &lt;T extends ViewModel&gt; T get(@NonNull String key, @NonNull Class&lt;T&gt; modelClass) {
+    ViewModel viewModel = mViewModelStore.get(key);
+    if (modelClass.isInstance(viewModel)) {
+        if (mFactory instanceof OnRequeryFactory) {
+            ((OnRequeryFactory) mFactory).onRequery(viewModel);
+        }
+        return (T) viewModel;
+    } else {
+        //noinspection StatementWithEmptyBody
+ if (viewModel != null) {
+            // TODO: log a warning.
+ }
+    }
+    if (mFactory instanceof KeyedFactory) {
+        viewModel = ((KeyedFactory) (mFactory)).create(key, modelClass);
+    } else {
+        viewModel = (mFactory).create(modelClass);
+    }
+    mViewModelStore.put(key, viewModel);
+    return (T) viewModel;
+}
+</code></pre>
+<p>可以我们传递的是一个<br>
+ViewModelStoreOwner对象<br>
+Fragment或者Activity就是这样一个对象，因为他们实现了```<br>
+ViewModelStoreOwner接口。<br>
+就拿Activity的父类ComponentActivity来举例。</p>
+<pre><code>public class ComponentActivity extends androidx.core.app.ComponentActivity implements
+ LifecycleOwner,
+        ViewModelStoreOwner,
+        HasDefaultViewModelProviderFactory,
+        SavedStateRegistryOwner,
+        OnBackPressedDispatcherOwner {
+</code></pre>
+<p>它的getViewModelStore方法实现如下：</p>
+<pre><code>@NonNull
+@Override
+public ViewModelStore getViewModelStore() {
+    if (getApplication() == null) {
+        throw new IllegalStateException(&quot;Your activity is not yet attached to the &quot;
+ + &quot;Application instance. You can't request ViewModel before onCreate call.&quot;);
+    }
+    if (mViewModelStore == null) {
+        NonConfigurationInstances nc =
+                (NonConfigurationInstances) getLastNonConfigurationInstance();
+        if (nc != null) {
+            // Restore the ViewModelStore from NonConfigurationInstances
+ mViewModelStore = nc.viewModelStore;
+        }
+        if (mViewModelStore == null) {
+            mViewModelStore = new ViewModelStore();
+        }
+    }
+    return mViewModelStore;
+}
+</code></pre>
+<p>看下ViewModelStore的实现</p>
+<pre><code>public class ViewModelStore {
+    // 一个存储ViewModel的hashMap.
+    private final HashMap&lt;String, ViewModel&gt; mMap = new HashMap&lt;&gt;();
+    //如果当前已经包含ViewModel了，替换就的ViewModel，并回调其onCleared方法。
+    //这个方法在只在ViewModelProvieder的get方法中调用，当ViewModelProvieder从自己的ViewModelScore中无法获取ViewModel对象时，它会new一个新的，然后加入自己的ViewModelScore中。
+   
+    final void put(String key, ViewModel viewModel) {
+        ViewModel oldViewModel = mMap.put(key, viewModel);
+        if (oldViewModel != null) {
+            oldViewModel.onCleared();
+        }
+    }
+    
+    final ViewModel get(String key) {
+        return mMap.get(key);
+    }
+    
+    Set&lt;String&gt; keys() {
+        return new HashSet&lt;&gt;(mMap.keySet());
+    }
+    
+    /**
+ *  Clears internal storage and notifies ViewModels that they are no longer used. */ 
+    public final void clear() {
+        for (ViewModel vm : mMap.values()) {
+            vm.clear();
+        }
+        mMap.clear();
+    }
+}
+</code></pre>
+<h3 id="生命周期">生命周期</h3>
+<p>ViewModel会在Activity Destroy是清空自己<br>
+在ComponentActivity的构造方法中Activity会监听自己的声明周期的ON_DESTROY时间。而我们的Activity都继承自ComponentActivity。</p>
+<pre><code>getLifecycle().addObserver(new LifecycleEventObserver() {
+    @Override
+ public void onStateChanged(@NonNull LifecycleOwner source,
+            @NonNull Lifecycle.Event event) {
+        if (event == Lifecycle.Event.ON_DESTROY) {
+        //如果是配置改变，比如屏幕旋转等导致的销毁，不会回调ViewModel的clear()方法。
+            if (!isChangingConfigurations()) {
+                getViewModelStore().clear();
+            }
+        }
+    }
+});
+</code></pre>
+<p>这样，当Activity销毁时，ViewModel就可以在自己的onCleared()方法中做一些清空数据的工作，避免的内存泄露。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[LeakCanary 分析]]></title>
         <id>https://philadelphia.github.io/post/leakcanary_analyse</id>
@@ -448,10 +589,19 @@ public Handler(Callback callback, boolean async) {
    
     @SuppressWarnings(&quot;WeakerAccess&quot;)
     public enum State {
+        // Activity#onDestroy()调用之后Activity就处于DESTROYED状态
         DESTROYED,
+
+        // Activity 被构建后但是onCreate()调用之前，Activity就处于INITIALIZED状态
         INITIALIZED,
+        
+        // Activity 被构建后但是onCreate()调用之后，onStop()调用之前，Activity就处于CREATED状态
         CREATED,
+
+        // Activity 被构建后但是onStart()调用之后，onPause()调用之前，Activity就处于STARTED状态
         STARTED,
+
+         // Activity 被构建后但是onResume()调用之后，Activity就处于RESUMED状态
         RESUMED;
 
         public boolean isAtLeast(@NonNull State state) {
@@ -1862,129 +2012,6 @@ s1 == s3 :false
 <p>有时候在Java面试中，你可能被问到关于字符串池的问题，比如，下面的语句创建了几个string.</p>
 <p>String str = new String(&quot;Cat&quot;);</p>
 <p>在上面的语句中，1个或者2个string被创建了，如果字符串池中已经有’cat‘字符串了，就只创建一个String.如果字符串池中没有’cat‘字符串，首先在字符串池中创建一个字符串，然后在堆内存中创建一个字符串，所有总共有2个string对象被创建了。</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[翻译-Java数组转换成List（Java Array to List Examples）]]></title>
-        <id>https://philadelphia.github.io/post/fan-yi-java-shu-zu-zhuan-huan-cheng-listjava-array-to-list-examples</id>
-        <link href="https://philadelphia.github.io/post/fan-yi-java-shu-zu-zhuan-huan-cheng-listjava-array-to-list-examples">
-        </link>
-        <updated>2019-11-25T02:39:32.000Z</updated>
-        <content type="html"><![CDATA[<p>原文链接：http<a href=""></a>s://javadevnotes.com/java-array-to-list-examples</p>
-<p>译文：</p>
-<p>有时候我们需要将数组类型转换成为集合类型，因为后者是一个更为强大的数据结构，java.util.List 有许多普通数组不支持的功能。比如：我们可以通过List的内置方法轻易地检测list是否包含某一个特定的值。下面是一些怎么将数组转换为list的例子。</p>
-<h2 id="通过-javautilarraysaslist将-array-转换成-list"><strong>通过 java.util.Arrays.asList()将 Array 转换成 List</strong></h2>
-<p>Arrays 类有一个方便的方法asList,可以帮助转换任务，下面是语法：<br>
-<code>public static &lt;T&gt; List&lt;T&gt; asList(T... a)</code><br>
-注意：参数不一定必须是数组，可变参数也可以。它可以创建一个list</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      List&lt;String&gt; myList = Arrays.asList(&quot;Apple&quot;);
-   }
-}
-</code></pre>
-<p>以上代码将穿件一个包含一个元素&quot;Apple&quot;的集合。我们也可以这样做：</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      List&lt;String&gt; myList = Arrays.asList(&quot;Apple&quot;, &quot;Orange&quot;);
-   }
-}
-</code></pre>
-<p>这将生成一个包含两个元素&quot;Apple&quot;,&quot;Orange&quot;的集合</p>
-<p>因为这是一个可变参数。我们可以传递一个数组，数组元素被认定为参数，例子：</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
-      List&lt;String&gt; myList = Arrays.asList(myArray);
-      for (String str : myList) {
-         System.out.println(str);
-      }
-   }
-}
-</code></pre>
-<p>这样,一个String集合被创建出来了。数组myArray被添加进去了。myList 集合有三个元素，一下是输出：</p>
-<p>Apple<br>
-Banana<br>
-Orange</p>
-<h2 id="陷阱">陷阱</h2>
-<p>这个方法有一些问题，传递进去的数组必须是一个对象数组，而不能是一个基本类型数组。比如：</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      int[] myArray = { 1, 2, 3 };
-      List myList = Arrays.asList(myArray);
-      System.out.println(myList.size());
-   }
-}
-</code></pre>
-<p>代码输出是1。为什么呢？因为asList方法期望一个对象的可变参数，但是传递进去的参数是一个基本类型数组，它创建了一个数组集合。所以该集合的为唯一元素是myArray。因此<code>myList.get(0)</code> 将返回与myArray同样的对象。</p>
-<h2 id="aslist创建的对象是固定大小的"><strong>asList()创建的对象是固定大小的</strong></h2>
-<p>asList()方法返回的list对象是固定大小的，不能容纳更多的元素，比如：</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
-      List&lt;String&gt; myList = Arrays.asList(myArray);
-      myList.add(&quot;Guava&quot;);
-   }
-}
-</code></pre>
-<p>输出如下：</p>
-<pre><code>Exception in thread &quot;main&quot; java.lang.UnsupportedOperationException
-	at java.util.AbstractList.add(AbstractList.java:148)
-	at java.util.AbstractList.add(AbstractList.java:108)
-	at Test.main(Test.java:8)
-</code></pre>
-<p>因为myList是固定长度的，不能添加更多元素。</p>
-<p>因为该方法返回的List对象不是java.util包下面的ArrayList，而是Arrays内部的ArrayList类型。改类没有实现add,revmove,clear方法，所以任何对改集合结构修改的调用都将失败。</p>
-<h2 id="将基本数组类型转换成list"><strong>将基本数组类型转换成List</strong></h2>
-<p>正如上面提到的。传递一个基本类型数组到asList方法不生效，一个不引入第三方库的解决办法是通过Java8 的流，例子如下：</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      int[] intArray = { 5, 10, 21 };
-      List myList = Arrays.stream(intArray).boxed()
-            .collect(Collectors.toList());
-   }
-}
-</code></pre>
-<p>数组的每一个元素都被从int转换成了Integer类型(装箱)，数组就被转成了List类型。</p>
-<h2 id="将数组转换成允许添加元素的list"><strong>将数组转换成允许添加元素的List</strong></h2>
-<p>正如上面陷阱部分提到的，Arrays.asList()方法不支持添加或者移除元素。如果你不想这样，下面是可选方案：</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
-      List&lt;String&gt; myList = new ArrayList&lt;String&gt;(Arrays.asList(myArray));
-      myList.add(&quot;Guava&quot;);
-   }
-}
-</code></pre>
-<p>这段代码显式地创建了一个新的ArrayList对象，然后将Arrays.asList的结果添加进去了。因为我们创建了一个ArrayList。所以没有添加移除限制，上面的代码执行结束前有四个元素。不要指望代码执行时抛出异常。</p>
-<h2 id="自己实现array组转换成list"><strong>自己实现Array组转换成List</strong></h2>
-<p>有时候解决问题，使用我们自己的实现方案是更好的。下面是一个将java数组转换成List的简单例子:</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
-      List&lt;String&gt; myList = new ArrayList&lt;String&gt;();
-      for (String str : myArray) {
-         myList.add(str);
-      }
-      System.out.println(myList.size());
-   }
-}
-</code></pre>
-<p>代码的预期输出是3.因为逻辑执行完集合了有3个元素。</p>
-<p>我们代码的负面是代码更长了，而且我们在重复造轮子。好处就是当我们的需求改变时，我们可以顺应自定义。比如：下面的代码，每一个元素都被添加到list中两次</p>
-<pre><code>public class Test {
-   public static void main(String[] args) {
-      String[] myArray = { &quot;Apple&quot;, &quot;Banana&quot;, &quot;Orange&quot; };
-      List&lt;String&gt; myList = new ArrayList&lt;String&gt;();
-      for (String str : myArray) {
-         myList.add(str);
-         myList.add(str);
-      }
-      System.out.println(myList.size());
-   }
-}
-</code></pre>
-<p>输出是6，因为数组中的元素都被添加两次。下面是另外一个将String数组转换成List<Integer> 的例子：</p>
 ]]></content>
     </entry>
 </feed>

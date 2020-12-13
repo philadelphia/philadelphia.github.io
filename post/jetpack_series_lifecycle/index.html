@@ -9,7 +9,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
-<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1607325550756">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1607834397279">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
 <link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
 
@@ -36,7 +36,7 @@
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
       <a class="site-title-container" href="https://philadelphia.github.io">
-        <img src="https://philadelphia.github.io/images/avatar.png?v=1607325550756" class="site-logo">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1607834397279" class="site-logo">
         <h1 class="site-title">philadelphia</h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -132,10 +132,19 @@
    
     @SuppressWarnings(&quot;WeakerAccess&quot;)
     public enum State {
+        // Activity#onDestroy()调用之后Activity就处于DESTROYED状态
         DESTROYED,
+
+        // Activity 被构建后但是onCreate()调用之前，Activity就处于INITIALIZED状态
         INITIALIZED,
+        
+        // Activity 被构建后但是onCreate()调用之后，onStop()调用之前，Activity就处于CREATED状态
         CREATED,
+
+        // Activity 被构建后但是onStart()调用之后，onPause()调用之前，Activity就处于STARTED状态
         STARTED,
+
+         // Activity 被构建后但是onResume()调用之后，Activity就处于RESUMED状态
         RESUMED;
 
         public boolean isAtLeast(@NonNull State state) {

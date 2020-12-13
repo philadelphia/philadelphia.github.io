@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Jetpack 之ViewModel | philadelphia</title>
+<meta name="description" content="德不孤，必有邻">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+<link rel="shortcut icon" href="https://philadelphia.github.io/favicon.ico?v=1607834397279">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+<link rel="stylesheet" href="https://philadelphia.github.io/styles/main.css">
+
+
+  
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css" />
+  
+
+  
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://philadelphia.github.io">
+        <img src="https://philadelphia.github.io/images/avatar.png?v=1607834397279" class="site-logo">
+        <h1 class="site-title">philadelphia</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            基础知识
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      德不孤，必有邻
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://philadelphia.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Jetpack 之ViewModel</h2>
+            <div class="post-date">2020-12-13</div>
+            
+            <div class="post-content">
+              <p>ViewModelScope是viewModel的管理者，而ViewModelProvider是ViewModel的间接管理者。<br>
+我们一般使用的时候都是ViewModel持有LiveData</p>
+<h3 id="使用">使用</h3>
+<p>我们一般获取ViewModel对象都是使用ViewModelProvider的get()方法。<br>
+在Activity或者Fragment 里调用</p>
+<pre><code>val  viewProvider:ViewModelProvider  = ViewModelProvider(MainActivity@this)
+val viewModel:MainViewModel =  viewProvider .get(MainViewModel::class.java)
+</code></pre>
+<p>首先得到ViewModelProvider对象</p>
+<pre><code>public ViewModelProvider(@NonNull ViewModelStoreOwner owner) {
+    this(owner.getViewModelStore(), owner instanceof HasDefaultViewModelProviderFactory
+            ? ((HasDefaultViewModelProviderFactory) owner).getDefaultViewModelProviderFactory()
+            : NewInstanceFactory.getInstance());
+}
+</code></pre>
+<p>get方法</p>
+<pre><code>public &lt;T extends ViewModel&gt; T get(@NonNull Class&lt;T&gt; modelClass) {
+    //取出modelClass的全限定名
+    String canonicalName = modelClass.getCanonicalName();
+    if (canonicalName == null) {
+        throw new IllegalArgumentException(&quot;Local and anonymous classes can not be ViewModels&quot;);
+    }
+ //  DEFAULT_KEY =&quot;androidx.lifecycle.ViewModelProvider.DefaultKey&quot;
+   //生成新的Key
+   return get(DEFAULT_KEY + &quot;:&quot; + canonicalName, modelClass);
+}
+</code></pre>
+<p>最终调用</p>
+<pre><code>public &lt;T extends ViewModel&gt; T get(@NonNull String key, @NonNull Class&lt;T&gt; modelClass) {
+    ViewModel viewModel = mViewModelStore.get(key);
+    if (modelClass.isInstance(viewModel)) {
+        if (mFactory instanceof OnRequeryFactory) {
+            ((OnRequeryFactory) mFactory).onRequery(viewModel);
+        }
+        return (T) viewModel;
+    } else {
+        //noinspection StatementWithEmptyBody
+ if (viewModel != null) {
+            // TODO: log a warning.
+ }
+    }
+    if (mFactory instanceof KeyedFactory) {
+        viewModel = ((KeyedFactory) (mFactory)).create(key, modelClass);
+    } else {
+        viewModel = (mFactory).create(modelClass);
+    }
+    mViewModelStore.put(key, viewModel);
+    return (T) viewModel;
+}
+</code></pre>
+<p>可以我们传递的是一个<br>
+ViewModelStoreOwner对象<br>
+Fragment或者Activity就是这样一个对象，因为他们实现了```<br>
+ViewModelStoreOwner接口。<br>
+就拿Activity的父类ComponentActivity来举例。</p>
+<pre><code>public class ComponentActivity extends androidx.core.app.ComponentActivity implements
+ LifecycleOwner,
+        ViewModelStoreOwner,
+        HasDefaultViewModelProviderFactory,
+        SavedStateRegistryOwner,
+        OnBackPressedDispatcherOwner {
+</code></pre>
+<p>它的getViewModelStore方法实现如下：</p>
+<pre><code>@NonNull
+@Override
+public ViewModelStore getViewModelStore() {
+    if (getApplication() == null) {
+        throw new IllegalStateException(&quot;Your activity is not yet attached to the &quot;
+ + &quot;Application instance. You can't request ViewModel before onCreate call.&quot;);
+    }
+    if (mViewModelStore == null) {
+        NonConfigurationInstances nc =
+                (NonConfigurationInstances) getLastNonConfigurationInstance();
+        if (nc != null) {
+            // Restore the ViewModelStore from NonConfigurationInstances
+ mViewModelStore = nc.viewModelStore;
+        }
+        if (mViewModelStore == null) {
+            mViewModelStore = new ViewModelStore();
+        }
+    }
+    return mViewModelStore;
+}
+</code></pre>
+<p>看下ViewModelStore的实现</p>
+<pre><code>public class ViewModelStore {
+    // 一个存储ViewModel的hashMap.
+    private final HashMap&lt;String, ViewModel&gt; mMap = new HashMap&lt;&gt;();
+    //如果当前已经包含ViewModel了，替换就的ViewModel，并回调其onCleared方法。
+    //这个方法在只在ViewModelProvieder的get方法中调用，当ViewModelProvieder从自己的ViewModelScore中无法获取ViewModel对象时，它会new一个新的，然后加入自己的ViewModelScore中。
+   
+    final void put(String key, ViewModel viewModel) {
+        ViewModel oldViewModel = mMap.put(key, viewModel);
+        if (oldViewModel != null) {
+            oldViewModel.onCleared();
+        }
+    }
+    
+    final ViewModel get(String key) {
+        return mMap.get(key);
+    }
+    
+    Set&lt;String&gt; keys() {
+        return new HashSet&lt;&gt;(mMap.keySet());
+    }
+    
+    /**
+ *  Clears internal storage and notifies ViewModels that they are no longer used. */ 
+    public final void clear() {
+        for (ViewModel vm : mMap.values()) {
+            vm.clear();
+        }
+        mMap.clear();
+    }
+}
+</code></pre>
+<h3 id="生命周期">生命周期</h3>
+<p>ViewModel会在Activity Destroy是清空自己<br>
+在ComponentActivity的构造方法中Activity会监听自己的声明周期的ON_DESTROY时间。而我们的Activity都继承自ComponentActivity。</p>
+<pre><code>getLifecycle().addObserver(new LifecycleEventObserver() {
+    @Override
+ public void onStateChanged(@NonNull LifecycleOwner source,
+            @NonNull Lifecycle.Event event) {
+        if (event == Lifecycle.Event.ON_DESTROY) {
+        //如果是配置改变，比如屏幕旋转等导致的销毁，不会回调ViewModel的clear()方法。
+            if (!isChangingConfigurations()) {
+                getViewModelStore().clear();
+            }
+        }
+    }
+});
+</code></pre>
+<p>这样，当Activity销毁时，ViewModel就可以在自己的onCleared()方法中做一些清空数据的工作，避免的内存泄露。</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://philadelphia.github.io/post/leakcanary_analyse">
+                  <h3 class="post-title">
+                    LeakCanary 分析
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+              
+                <div id="gitalk-container" data-aos="fade-in"></div>
+              
+
+              
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+  
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script>
+
+      var gitalk = new Gitalk({
+        clientID: '',
+        clientSecret: '',
+        repo: '',
+        owner: '',
+        admin: [''],
+        id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+        distractionFreeMode: false  // Facebook-like distraction free mode
+      })
+
+      gitalk.render('gitalk-container')
+
+    </script>
+  
+
+  
+
+
+
+
+  </body>
+</html>
